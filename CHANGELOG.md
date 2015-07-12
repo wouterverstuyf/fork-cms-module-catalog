@@ -1,3 +1,17 @@
+3.0.1 (2015-xx-xx)
+--
+
+Core:
+
+* Fix constant BACKEND_MODULE_PATH to BACKEND_MODULES_PATH
+* Multiple categories per product
+* Individually sorting of product per category
+
+Bugfixes:
+
+* Edit category - fix error when no parent category is selected
+
+
 2.2.1 (2015-xx-xx)
 --
 
