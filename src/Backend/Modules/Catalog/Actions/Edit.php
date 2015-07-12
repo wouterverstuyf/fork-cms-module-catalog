@@ -79,12 +79,12 @@ class Edit extends BackendBaseActionEdit
 	public function execute()
 	{
 		parent::execute();
-	
+
 		$this->loadData();
 		$this->loadForm();
-		
+
 		$this->validateForm();
-	
+
 		$this->parse();
 		$this->display();
 	}
@@ -95,7 +95,7 @@ class Edit extends BackendBaseActionEdit
 	protected function loadData()
 	{
 		$this->id = $this->getParameter('id', 'int', null);
-		
+
 		if($this->id == null || !BackendCatalogModel::exists($this->id)) {
 			$this->redirect(
 				BackendModel::createURLForAction('index') . '&error=non-existing'
@@ -103,9 +103,10 @@ class Edit extends BackendBaseActionEdit
 		}
 
 		$this->record = BackendCatalogModel::get($this->id);
-		
+
 		$this->categories = (array) BackendCatalogModel::getCategories(true);
 		$this->products = (array) BackendCatalogModel::getAll();
+		$this->productsCategories = (array) BackendCatalogModel::getProductCategories($this->id);
 		$this->allProductsGroupedByCategories = (array) BackendCatalogModel::getAllProductsGroupedByCategories();
 		$this->relatedProducts = (array) BackendCatalogModel::getRelatedProducts($this->id);
 		$this->specifications = (array) BackendCatalogModel::getSpecifications();
@@ -128,42 +129,45 @@ class Edit extends BackendBaseActionEdit
 		$this->frm->addText('price' ,$this->record['price'], null, 'inputText price', 'inputTextError price');
 		$this->frm->addText('tags', BackendTagsModel::getTags($this->URL->getModule(), $this->record['id']), null, 'inputText tagBox', 'inputTextError tagBox');
 		$this->frm->addDropdown('related_products', $this->allProductsGroupedByCategories, $this->relatedProducts, true );
-        $this->frm->addCheckbox('allow_comments', ($this->record['allow_comments'] === 'Y' ? true : false));
+    $this->frm->addCheckbox('allow_comments', ($this->record['allow_comments'] === 'Y' ? true : false));
 
-        // categories
-		$this->frm->addDropdown('category_id', $this->categories, $this->record['category_id']);
+		// categories
+		$this->frm->addDropdown('category_id', $this->categories, $this->productsCategories, true);
+		$this->frm->getField('category_id')->setDefaultElement('');
 
+		// brands
 		$this->frm->addDropdown('brand_id', $this->brands, $this->record['brand_id']);
+		$this->frm->getField('brand_id')->setDefaultElement('');
 
 		$specificationsHTML = array();
-		
+
 		// specifications
 		foreach($this->specifications as $specification) {
 			$specificationName = 'specification' . $specification['id'];
-			
+
 			$value = BackendCatalogModel::getSpecificationValue($specification['id'], $this->record['id']);
-			
+
 			// check if value is set
 			$value = (isset($value['value']) ? $value['value'] : null);
-									
+
 			// @todo check if type is text or textarea..
 			$specificationText = $this->frm->addText($specificationName, $value);
 			$specificationHTML = $specificationText->parse();
-			
+
 			// parse specification into template
 			$this->tpl->assign('id', $specification['id']);
 			$this->tpl->assign('label', $specification['title']);
 			$this->tpl->assign('field', $specificationHTML);
 			$this->tpl->assign('spec', true);
-			
-			$specificationsHTML[]['specification'] = $this->tpl->getContent(BACKEND_MODULE_PATH . '/Layout/Templates/Specification.tpl');
+
+			$specificationsHTML[]['specification'] = $this->tpl->getContent(BACKEND_MODULES_PATH . '/Catalog/Layout/Templates/Specification.tpl');
 		}
-		
+
 		$this->tpl->assign('specifications', $specificationsHTML);
-		
+
 		// meta object
 		$this->meta = new BackendMeta($this->frm, $this->record['meta_id'], 'title', true);
-		
+
 		// set callback for generating a unique URL
 		$this->meta->setUrlCallback('Backend\Modules\Catalog\Engine\Model', 'getURL', array($this->record['id']));
 	}
@@ -211,37 +215,55 @@ class Edit extends BackendBaseActionEdit
 				$item['title'] = $fields['title']->getValue();
 				$item['summary'] = $fields['summary']->getValue();
 				$item['text'] = $fields['text']->getValue();
-				$item['category_id'] = $this->frm->getField('category_id')->getValue();
 				$item['brand_id'] = $fields['brand_id']->getValue();
-                $item['allow_comments'] = $this->frm->getField('allow_comments')->getChecked() ? 'Y' : 'N';
-
+        $item['allow_comments'] = $this->frm->getField('allow_comments')->getChecked() ? 'Y' : 'N';
 				$item['meta_id'] = $this->meta->save();
 
 				BackendCatalogModel::update($item);
 				$item['id'] = $this->id;
+
+				/* CATEGORIES */
+				// remove categories for this product if not enabled
+				$categoriesToRemove = array_diff($this->productsCategories, $fields['category_id']->getValue());
+				foreach($categoriesToRemove as $category) {
+					BackendCatalogModel::deleteProductCategory($item['id'], $category);
+				}
+				// fill categories
+				$categoriesToFill = array_diff($fields['category_id']->getValue(), $this->productsCategories);
+				foreach($categoriesToFill as $category) {
+					$categoryArray = array();
+					$categoryArray['product_id'] = $item['id'];
+					$categoryArray['category_id'] = $category;
+					$categoryArray['sequence'] = BackendCatalogModel::getMaximumSequence($category) + 1;
+
+					// insert the category
+					BackendCatalogModel::insertProductCategory($categoryArray);
+				}
+
+				/* SPECIFICATIONS */
 				$specificationArray = array();
-				
+
 				// loop trough specifications and insert values
 				foreach( $this->specifications as $specification) {
 					$field = 'specification' . $specification['id'];
-					
+
 					// check if there is an value
-					if($fields[$field]->getValue() != null) { 
+					if($fields[$field]->getValue() != null) {
 						$specificationArray['value'] = $fields[$field]->getValue();
 						$specificationArray['product_id'] = $item['id'];
 						$specificationArray['specification_id'] = $specification['id'];
-						
+
 						// when specification value already exists. update value
 						if(BackendCatalogModel::existsSpecificationValue($item['id'], $specification['id']) != false) {
 							// update specification with product id and value
 							BackendCatalogModel::updateSpecificationValue($specification['id'], $item['id'], $specificationArray);
-						} else {							
+						} else {
 							// when specification value doesnt exists, insert new value
 							BackendCatalogModel::insertSpecificationValue($specificationArray);
 						}
 					}
 				}
-				
+
 				// save the tags
 				BackendTagsModel::saveTags($item['id'], $fields['tags']->getValue(), $this->URL->getModule());
 
@@ -249,13 +271,15 @@ class Edit extends BackendBaseActionEdit
 				BackendSearchModel::saveIndex($this->getModule(), $item['id'], array('title' => $item['title'], 'summary' => $item['summary'], 'text' => $item['text']));
 
 				// save related projects
-				BackendCatalogModel::saveRelatedProducts($item['id'], $this->frm->getField('related_products')->getValue(), $this->relatedProducts);
-				
+				if(!empty($this->allProductsGroupedByCategories)) {
+					BackendCatalogModel::saveRelatedProducts($item['id'], $this->frm->getField('related_products')->getValue(), $this->relatedProducts);
+				}
+
 				// trigger event
 				BackendModel::triggerEvent(
 					$this->getModule(), 'after_edit', $item
 				);
-				
+
 				$this->redirect(
 					BackendModel::createURLForAction('index') . '&report=edited&highlight=row-' . $item['id']
 				);

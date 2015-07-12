@@ -13,7 +13,7 @@ jsBackend.catalog =
 		if($('#dataGridCatalogHolder').length > 0)
 		{
 			//console.log('test');
-			
+
 			// destroy default drag and drop
 			$('.sequenceByDragAndDrop tbody').sortable('destroy');
 
@@ -22,14 +22,14 @@ jsBackend.catalog =
 			jsBackend.catalog.checkForEmptyCategories();
 		}
 
+		// auto submit on category change
 		$filter = $('#filter');
 		$filterCategory = $('#filter #category');
-		
 		$filterCategory.on('change', function(e)
 		{
 			$filter.submit();
 		});
-		
+
 		// do meta
 		if($('#title').length > 0) $('#title').doMeta();
 	},
@@ -67,13 +67,13 @@ jsBackend.catalog =
 			});
 		}
 	},
-	
+
 	/**
 	 * Bind drag and dropping of a category
 	 */
 	bindDragAndDropCategoryProducts: function()
 	{
-		// products_images_dg 
+		// products_images_dg
 		$.each($('#products_images_dg'), function()
 		{
 			// make them sortable
@@ -159,7 +159,7 @@ jsBackend.catalog =
 						var toCategoryId = ui.item.parents('.dataGridHolder').attr('id').substring(9);
 						var fromCategorySequence = $(this).sortable('toArray').join(',');
 						var toCategorySequence = $('#dataGrid-' + toCategoryId).sortable('toArray').join(',');
-						
+
 						// make ajax call
 						$.ajax(
 								{
@@ -179,16 +179,16 @@ jsBackend.catalog =
 										{
 											// change count in title (if any)
 											$('div#dataGrid-' + fromCategoryId + ' h3').html($('div#dataGrid-' + fromCategoryId + ' h3').html().replace(/\(([0-9]*)\)$/, '(' + ( $('div#dataGrid-' + fromCategoryId + ' table.dataGrid tr').length - 1 ) + ')'));
-											
+
 											// if there are no records -> show message
 											if($('div#dataGrid-' + fromCategoryId + ' table.dataGrid tr').length == 1)
 											{
 												$('div#dataGrid-' + fromCategoryId + ' table.dataGrid').append('<tr class="noProducts"><td colspan="4">' + jsBackend.locale.msg('NoProductsInCategory') + '</td></tr>');
 											}
-											
+
 											// check empty categories
 											jsBackend.catalog.checkForEmptyCategories();
-											
+
 											// redo odd-even
 											var table = $('table.dataGrid');
 											table.find('tr').removeClass('odd').removeClass('even');
@@ -197,7 +197,7 @@ jsBackend.catalog =
 
 											// show message
 											jsBackend.messages.add('success', jsBackend.locale.msg('ChangedOrderSuccessfully'));
-											
+
 											// change count in title (if any)
 											$('div#dataGrid-' + toCategoryId + ' h3').html($('div#dataGrid-' + toCategoryId + ' h3').html().replace(/\(([0-9]*)\)$/, '(' + ( $('div#dataGrid-' + toCategoryId + ' table.dataGrid tr').length - 1 ) + ')'));
 										}
@@ -205,11 +205,11 @@ jsBackend.catalog =
 										{
 											// revert
 											$(this).sortable('cancel');
-											
+
 											// show message
 											jsBackend.messages.add('error', 'alter sequence failed.');
 										}
-										
+
 										// alert the user
 										if(data.code != 200 && jsBackend.debug){ alert(data.message); }
 									},
@@ -217,10 +217,10 @@ jsBackend.catalog =
 									{
 										// revert
 										$(this).sortable('cancel');
-										
+
 										// show message
 										jsBackend.messages.add('error', 'alter sequence failed.');
-										
+
 										// alert the user
 										if(jsBackend.debug){ alert(textStatus); }
 									}

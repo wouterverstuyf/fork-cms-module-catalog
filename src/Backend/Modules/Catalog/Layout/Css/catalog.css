@@ -1,6 +1,6 @@
 /*
   Catalog extending CSS
-  
+
   @author Tim van Wolfswinkel <tim@webleads.nl>
 */
 
@@ -38,9 +38,11 @@
   background: #eee !important;
 }
 
+#catalog select.selectMultiple,
 .relatedProducts select{
   height: 250px;
   width: 100%;
+  text-transform: lowercase;
 }
 
 .specificationInput input {

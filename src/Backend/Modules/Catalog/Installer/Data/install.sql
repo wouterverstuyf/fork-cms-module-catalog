@@ -70,17 +70,24 @@ CREATE TABLE IF NOT EXISTS `catalog_orders_values` (
 CREATE TABLE IF NOT EXISTS `catalog_products` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `meta_id` int(11) NOT NULL,
-  `category_id` int(11) NOT NULL,
   `brand_id` int(11) NULL,
   `language` varchar(5) COLLATE utf8_unicode_ci NOT NULL,
   `title` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `price` decimal(10,2) NOT NULL,
+  `price` decimal(10,2) DEFAULT NULL,
   `summary` text COLLATE utf8_unicode_ci NOT NULL,
   `text` text COLLATE utf8_unicode_ci,
+  `spotlight` enum('N','Y') COLLATE utf8_unicode_ci NOT NULL DEFAULT 'N',
   `allow_comments` enum('N','Y') COLLATE utf8_unicode_ci NOT NULL DEFAULT 'N',
   `num_comments` int(11) NOT NULL,
   `created_on` datetime NOT NULL,
   `edited_on` datetime NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=1 ;
+
+CREATE TABLE IF NOT EXISTS `catalog_products_categories` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `product_id` int(11) NOT NULL,
+  `category_id` int(11) NOT NULL,
   `sequence` int(11) NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=1 ;

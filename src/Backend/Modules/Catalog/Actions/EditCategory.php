@@ -12,7 +12,7 @@ namespace Backend\Modules\Catalog\Actions;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Filesystem\Exception\IOException;
 use Symfony\Component\HttpFoundation\File\File;
- 
+
 use Backend\Core\Engine\Base\ActionEdit as BackendBaseActionEdit;
 use Backend\Core\Engine\Model as BackendModel;
 use Backend\Core\Engine\Form as BackendForm;
@@ -70,7 +70,7 @@ class EditCategory extends BackendBaseActionEdit
 
 		//hidden values
 		$categories = BackendCatalogModel::getCategories(true);
-		
+
 		$this->frm->addDropdown('parent_id', $categories, $this->record['parent_id']);
 
 		$this->meta = new BackendMeta($this->frm, $this->record['meta_id'], 'title', true);
@@ -86,7 +86,7 @@ class EditCategory extends BackendBaseActionEdit
 
 		// assign the data
 		$this->tpl->assign('item', $this->record);
-		
+
 		// is category allowed to be deleted?
 		if(BackendCatalogModel::isCategoryAllowedToBeDeleted($this->id)) $this->tpl->assign('showDelete', true);
 	}
@@ -101,48 +101,52 @@ class EditCategory extends BackendBaseActionEdit
 
 			$recordId = $this->record['id'];
 			$newParent = $this->frm->getField('parent_id')->getValue();
-			
+
 			if($recordId == $newParent) {
 				$this->frm->getField('parent_id')->setError(BL::err('SameCategory'));
 			}
-			
+
 			// validate fields
 			$this->frm->getField('title')->isFilled(BL::err('TitleIsRequired'));
-			
+
 			if($this->frm->getField('image')->isFilled()) {
 				$this->frm->getField('image')->isAllowedExtension(array('jpg', 'png', 'gif', 'jpeg'), BL::err('JPGGIFAndPNGOnly'));
 				$this->frm->getField('image')->isAllowedMimeType(array('image/jpg', 'image/png', 'image/gif', 'image/jpeg'), BL::err('JPGGIFAndPNGOnly'));
 			}
-			
+
 			$this->meta->validate();
-			
+
 			if($this->frm->isCorrect()) {
+
+				$parentCategory = $this->frm->getField('parent_id')->getValue();
+				if($parentCategory == 'no_category') $parentCategory = 0;
+
 				// build item
 				$item['id'] = $this->id;
 				$item['language'] = $this->record['language'];
 				$item['title'] = $this->frm->getField('title')->getValue();
-				$item['parent_id'] = $this->frm->getField('parent_id')->getValue();				
+				$item['parent_id'] = $parentCategory;
 				$item['meta_id'] = $this->meta->save(true);
 
 				// the image path
 				$imagePath = FRONTEND_FILES_PATH . '/' . $this->getModule() . '/categories/' . $this->id;
-				
+
 				// create folders if needed
 				$fs = new Filesystem();
-				
+
 				if (!$fs->exists($imagePath . '/150x150/')) {
 				    $fs->mkdir($imagePath . '/150x150/');
 				}
-				
+
 				if (!$fs->exists($imagePath . '/source/')) {
 				    $fs->mkdir($imagePath . '/source/');
 				}
 
-                if ($this->frm->getField('delete_image')->isChecked()) {
-                    BackendModel::deleteThumbnails($imagePath, $this->record['image']);
-                    $item['image'] = null;
-                }
-				
+        if ($this->frm->getField('delete_image')->isChecked()) {
+            BackendModel::deleteThumbnails($imagePath, $this->record['image']);
+            $item['image'] = null;
+        }
+
 				// image provided?
 				if($this->frm->getField('image')->isFilled()) {
 					// build the image name
@@ -151,10 +155,10 @@ class EditCategory extends BackendBaseActionEdit
 					// upload the image & generate thumbnails
 					$this->frm->getField('image')->generateThumbnails($imagePath, $item['image']);
 				}
-				
+
 				// update the item
 				BackendCatalogModel::updateCategory($item);
-				
+
 				// trigger event
 				BackendModel::triggerEvent(
 					$this->getModule(),

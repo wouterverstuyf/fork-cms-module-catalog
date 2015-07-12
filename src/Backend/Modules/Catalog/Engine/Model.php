@@ -22,18 +22,20 @@ use Backend\Modules\Tags\Engine\Model as BackendTagsModel;
  */
 class Model
 {
-	const QRY_DATAGRID_BROWSE = 'SELECT i.id, i.category_id, i.title AS title, i.sequence
+	const QRY_DATAGRID_BROWSE = 'SELECT i.id, pc.category_id, i.title AS title, i.sequence
 		 FROM catalog_products AS i
+		 LEFT JOIN catalog_products_categories AS pc ON i.id = pc.product_id
 		 WHERE i.language = ?
 		 ORDER BY i.sequence ASC';
 
 	const QRY_DATAGRID_BROWSE_FOR_CATEGORY = 'SELECT
-			i.id, i.category_id, i.title AS title, i.sequence,
+			i.id, i.title AS title, pc.sequence,
 			c.title AS category
-		 FROM catalog_products AS i
-		 INNER JOIN catalog_categories AS c ON i.category_id = c.id
-		 WHERE i.category_id = ? AND i.language = ? 
-		 ORDER BY i.sequence ASC';
+		 FROM catalog_products_categories AS pc
+		 INNER JOIN catalog_categories AS c ON pc.category_id = c.id
+		 LEFT JOIN catalog_products AS i ON pc.product_id = i.id
+		 WHERE pc.category_id = ? AND i.language = ?
+		 ORDER BY pc.sequence ASC';
 
 	const QRY_DATAGRID_BROWSE_COMMENTS = 'SELECT
 		 	i.id, UNIX_TIMESTAMP(i.created_on) AS created_on, i.author, i.text,
@@ -59,20 +61,16 @@ class Model
 		 INNER JOIN meta AS m ON c.meta_id = m.id
 		 WHERE o.order_id = ?';
 
-	const QRY_DATAGRID_BROWSE_CATEGORIES = 'SELECT c.id, c.title, COUNT(i.id) AS num_products, c.sequence
+	const QRY_DATAGRID_BROWSE_CATEGORIES = 'SELECT c.id, c.title, COUNT(i.product_id) AS num_products, c.sequence
 		 FROM catalog_categories AS c
-		 LEFT OUTER JOIN catalog_products AS i
-			ON c.id = i.category_id
-			AND i.language = c.language
+		 LEFT JOIN catalog_products_categories AS i ON c.id = i.category_id
 		 WHERE c.language = ?
 		 GROUP BY c.id
 		 ORDER BY c.sequence ASC';
 
-	const QRY_DATAGRID_BROWSE_CATEGORIES_WITH_CATEGORYID = 'SELECT c.id, c.title, COUNT(i.id) AS num_products, c.sequence
+	const QRY_DATAGRID_BROWSE_CATEGORIES_WITH_CATEGORYID = 'SELECT c.id, c.title, COUNT(i.product_id) AS num_products, c.sequence
 		 FROM catalog_categories AS c
-		 LEFT OUTER JOIN catalog_products AS i
-			ON c.id = i.category_id
-			AND i.language = c.language
+		 LEFT JOIN catalog_products_categories AS i ON c.id = i.category_id
 		 WHERE c.parent_id = ? AND c.language = ?
 		 GROUP BY c.id
 		 ORDER BY c.sequence ASC';
@@ -120,6 +118,18 @@ class Model
 	}
 
 	/**
+	 * Delete categories for a selected product
+	 *
+	 * @param int $productId
+	 */
+	public static function deleteAllProductCategories($productId)
+	{
+		$db = BackendModel::getContainer()->get('database');
+
+		$db->delete('catalog_products_categories', 'product_id = ?', array((int) $productId));
+	}
+
+	/**
 	 * Delete a specific category
 	 *
 	 * @param int $id
@@ -133,7 +143,7 @@ class Model
 		{
 			$db->delete('meta', 'id = ?', array($item['meta_id']));
 			$db->delete('catalog_categories', 'id = ?', array((int)$id));
-			$db->update('catalog_products', array('category_id' => null), 'category_id = ?', array((int)$id));
+			$db->delete('catalog_products_categories', 'category_id = ?', array((int) $id));
 		}
 	}
 
@@ -221,6 +231,18 @@ class Model
 
 		// invalidate the cache for catalog
 		BackendModel::invalidateFrontendCache('catalog', BL::getWorkingLanguage());
+	}
+
+	/**
+	 * Delete categories for a selected product
+	 *
+	 * @param int $productId
+	 */
+	public static function deleteProductCategory($productId, $categoryId)
+	{
+		$db = BackendModel::getContainer()->get('database');
+
+		$db->delete('catalog_products_categories', 'product_id = ? AND category_id = ?', array((int) $productId, (int) $categoryId));
 	}
 
 	/**
@@ -450,7 +472,7 @@ class Model
 	{
 		return (bool)BackendModel::getContainer()->get('database')->getVar('SELECT 1
 			 FROM catalog_specifications_values AS i
-			 WHERE i.product_id = ? AND i.specification_id = ? 
+			 WHERE i.product_id = ? AND i.specification_id = ?
 			 LIMIT 1', array((int)$productId, (int)$specificationId));
 	}
 
@@ -548,13 +570,12 @@ class Model
 
 		if($includeCount)
 		{
-			$allCategories = (array)$db->getRecords('SELECT i.id, i.parent_id, CONCAT(i.title, " (", COUNT(p.category_id) ,")") AS title
+			$allCategories = (array)$db->getRecords('SELECT i.id, i.parent_id, CONCAT(i.title, " (", COUNT(p.product_id) ,")") AS title
 				 FROM catalog_categories AS i
-				 LEFT OUTER JOIN catalog_products AS p ON i.id = p.category_id AND i.language = p.language
+				 LEFT OUTER JOIN catalog_products_categories AS p ON i.id = p.category_id
 				 WHERE i.language = ?
 				 GROUP BY i.id
 				 ORDER BY i.sequence', array(BL::getWorkingLanguage()));
-
 
 			$tree = array();
 
@@ -588,6 +609,25 @@ class Model
 			}
 		}
 		return $tree;
+	}
+
+	/**
+	 * Get all the categories as pairs for dropdown
+	 *
+	 * @return array
+	 */
+	public static function getCategoriesAsPairs()
+	{
+		$db = BackendModel::getContainer()->get('database');
+
+		$categories = (array)$db->getPairs('SELECT i.id, i.title
+			 FROM catalog_categories AS i
+			 LEFT OUTER JOIN catalog_products_categories AS p ON i.id = p.category_id
+			 WHERE i.language = ?
+			 GROUP BY i.id
+			 ORDER BY i.title', array(BL::getWorkingLanguage()));
+
+		return $categories;
 	}
 
 	/**
@@ -659,9 +699,10 @@ class Model
 	{
 		$db = BackendModel::getContainer()->get('database');
 
-		$allProducts = (array)$db->getRecords('SELECT p.id, p.title, pc.id AS category_id, pc.title AS category_title
+		$allProducts = (array)$db->getRecords('SELECT p.id, p.title, c.id AS category_id, c.title AS category_title
 			 FROM catalog_products p
-			 INNER JOIN catalog_categories pc ON p.category_id = pc.id
+			 LEFT JOIN catalog_products_categories pc ON p.id = pc.product_id
+			 INNER JOIN catalog_categories c ON pc.category_id = c.id
 			 WHERE p.language = ?', array(BL::getWorkingLanguage()));
 
 		$productsGroupedByCategory = array();
@@ -672,6 +713,21 @@ class Model
 		}
 
 		return $productsGroupedByCategory;
+	}
+
+	/**
+	 * Get products categories of an item
+	 *
+	 * @param int $id The product id
+	 * @return array
+	 */
+	public static function getProductCategories($productId)
+	{
+		$db = BackendModel::getContainer()->get('database');
+
+		return (array)$db->getColumn('SELECT p.category_id
+			 FROM catalog_products_categories p
+			 WHERE p.product_id = ?', array((int) $productId));
 	}
 
 	/**
@@ -690,7 +746,7 @@ class Model
 
 		$i = 0;
 
-		// build new keys (starting from zero)	
+		// build new keys (starting from zero)
 		foreach($relatedProducts as $key => $value)
 		{
 			if(isset($relatedProducts[$key]))
@@ -879,10 +935,11 @@ class Model
 	 *
 	 * @return int
 	 */
-	public static function getMaximumSequence()
+	public static function getMaximumSequence($categoryId)
 	{
-		return (int)BackendModel::getContainer()->get('database')->getVar('SELECT MAX(i.sequence)
-			 FROM catalog_products AS i');
+		return (int)BackendModel::getContainer()->get('database')->getVar('SELECT MAX(pc.sequence)
+			 FROM catalog_products_categories AS pc
+			 WHERE category_id = ?', array($categoryId));
 	}
 
 	/**
@@ -1141,6 +1198,17 @@ class Model
 	}
 
 	/**
+	 * Insert a product category
+	 *
+	 * @param array $item
+	 * @return int
+	 */
+	public static function insertProductCategory(array $item)
+	{
+		return BackendModel::getContainer()->get('database')->insert('catalog_products_categories', $item);
+	}
+
+	/**
 	 * Insert a specification in the database
 	 *
 	 * @param array $item
@@ -1227,8 +1295,8 @@ class Model
 	 */
 	public static function isCategoryAllowedToBeDeleted($id)
 	{
-		return !(bool)BackendModel::getContainer()->get('database')->getVar('SELECT COUNT(i.id)
-											FROM catalog_products AS i
+		return !(bool)BackendModel::getContainer()->get('database')->getVar('SELECT COUNT(i.product_id)
+											FROM catalog_products_categories AS i
 											INNER JOIN catalog_categories AS c
 											WHERE i.category_id = ? OR c.parent_id = ?
 											', array((int)$id, (int)$id));
@@ -1531,6 +1599,17 @@ class Model
 			foreach($languages as $language) BackendModel::invalidateFrontendCache('catalog', $language);
 		}
 	}
+
+  /**
+   * Update a product category
+   *
+   * @param array $item
+   * @return int
+   */
+  public static function updateProductCategorySequence($productId, $categoryId, $item)
+  {
+      return BackendModel::getContainer()->get('database')->update('catalog_products_categories', $item, 'product_id = ? AND category_id = ?', array((int)$productId, (int)$categoryId));
+  }
 
 	/**
 	 * Update a certain specification

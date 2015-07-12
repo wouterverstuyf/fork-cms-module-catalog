@@ -24,7 +24,7 @@
 			<li><a href="#tabSEO">{$lblSEO|ucfirst}</a></li>
 		</ul>
 
-		<div id="tabContent">			
+		<div id="tabContent">
 			<table border="0" cellspacing="0" cellpadding="0" width="100%">
 				<tr>
 					<td id="leftColumn">
@@ -35,7 +35,7 @@
 									<label for="summary">{$lblSummary|ucfirst}<abbr title="{$lblRequiredField}">*</abbr></label>
 								</h3>
 							</div>
-							<div class="optionsRTE"> 
+							<div class="optionsRTE">
 								{$txtSummary} {$txtSummaryError}
 							</div>
 						</div>
@@ -62,18 +62,18 @@
 											{$specifications.specification}
 										{/iteration:specifications}
 									{/option:specifications}
-		
+
 									{* This row always needs to be here. We show/hide it with javascript *}
 									<div id="noSpecifications" class="options"{option:specifications} style="display: none;"{/option:specifications}>
 										{$msgNoSpecifications}
-									</div>	
+									</div>
 								</div>
 							</div>
 						</div>
 
 					</td>
 
-					<td id="sidebar">						
+					<td id="sidebar">
 						<div class="box">
 							<div class="heading">
 								<h3>
@@ -85,20 +85,20 @@
 								{$txtPrice} {$txtPriceError}
 							</div>
 							<div class="options">
-								<label for="categoryId">{$lblCategory|ucfirst}<abbr title="{$lblRequiredField}">*</abbr></label>
+								<label for="categoryId">{$lblCategories|ucfirst}<abbr title="{$lblRequiredField}">*</abbr></label>
 								{$ddmCategoryId} {$ddmCategoryIdError}
 							</div>
 							<div class="options">
 								<label for="tags">{$lblTags|ucfirst}</label>
 								{$txtTags} {$txtTagsError}
 							</div>
-                            <div class="options">
-                                <label for="brandId">{$lblBrand|ucfirst}</label>
-                                {$ddmBrandId} {$ddmBrandIdError}
-                            </div>
-							
+              <div class="options">
+                  <label for="brandId">{$lblBrand|ucfirst}</label>
+                  {$ddmBrandId} {$ddmBrandIdError}
+              </div>
+
 						</div>
-						
+
 						<div class="box">
 							<div class="heading">
 								<h3>
@@ -134,7 +134,7 @@
 			<input id="addButton" class="inputButton button mainButton" type="submit" name="add" value="{$lblPublish|ucfirst}" />
 		</div>
 	</div>
-	
+
 	{* Dialog for a textbox *}
 	<div id="textboxDialog" title="{$lblAddSpecification|ucfirst}" class="dialog" style="display: none;">
 		<input type="hidden" name="textbox_id" id="textboxId" value="" />

@@ -18,10 +18,41 @@
 </div>
 
 {form:filter}
-	<p class="oneLiner">
-		<label for="category">{$msgShowOnlyProductsInCategory}:</label>
-		&nbsp;{$ddmCategory} {$ddmCategoryError}
-	</p>
+<div class="dataFilter">
+	<table>
+		<tbody>
+			<tr>
+				<td>
+					<div class="options">
+						<p>
+							<label for="name">{$lblName|ucfirst}</label>
+							{$txtName} {$txtNameError}
+						</p>
+					</div>
+				</td>
+				<td>
+					<div class="options">
+						<p>
+							<label for="category">{$lblCategory|ucfirst}</label>
+							{$ddmCategory} {$ddmCategoryError}
+						</p>
+					</div>
+				</td>
+			</tr>
+		</tbody>
+		<tfoot>
+			<tr>
+				<td colspan="99">
+					<div class="options">
+						<div class="buttonHolder">
+							<input id="search" class="inputButton button mainButton" type="submit" name="search" value="{$lblUpdateFilter|ucfirst}" />
+						</div>
+					</div>
+				</td>
+			</tr>
+		</tfoot>
+	</table>
+</div>
 {/form:filter}
 
 {option:dgProducts}

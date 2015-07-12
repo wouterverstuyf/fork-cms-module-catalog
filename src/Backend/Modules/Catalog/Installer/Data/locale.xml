@@ -38,10 +38,10 @@
 				<translation language="nl"><![CDATA[Er zijn nog geen video's toegevoegd.]]></translation>
 				<translation language="en"><![CDATA[There are no videos added yet.]]></translation>
 			</item>
-            <item type="message" name="NoBrands">
-                <translation language="nl"><![CDATA[Er zijn nog geen merken toegevoegd.]]></translation>
-                <translation language="en"><![CDATA[There are no brands added yet.]]></translation>
-            </item>
+      <item type="message" name="NoBrands">
+          <translation language="nl"><![CDATA[Er zijn nog geen merken toegevoegd.]]></translation>
+          <translation language="en"><![CDATA[There are no brands added yet.]]></translation>
+      </item>
 			<item type="label" name="EmbeddedUrl">
 				<translation language="nl"><![CDATA[embedded url]]></translation>
 				<translation language="en"><![CDATA[embedded url]]></translation>
@@ -173,7 +173,7 @@
 			<item type="label" name="PostalCode">
 			  <translation language="nl"><![CDATA[Postcode]]></translation>
 			  <translation language="en"><![CDATA[Postal code]]></translation>
-			</item>			
+			</item>
 			<item type="message" name="AddedSpecification">
 				<translation language="nl"><![CDATA[De specificatie is toegevoegd.]]></translation>
 				<translation language="en"><![CDATA[The specification is added.]]></translation>
@@ -213,7 +213,7 @@
 			<item type="label" name="BackToOverview">
 				<translation language="nl"><![CDATA[terug naar overzicht]]></translation>
 				<translation language="en"><![CDATA[back to overview]]></translation>
-			</item>			
+			</item>
 			<item type="message" name="CommentOnWithURL">
 				<translation language="nl"><![CDATA[Reactie op: <a href="%1$s">%2$s</a>]]></translation>
 				<translation language="en"><![CDATA[Comment on: <a href="%1$s">%2$s</a>]]></translation>
@@ -382,7 +382,7 @@
 			</item>
 		</Core>
 	</Backend>
-	
+
 	<Frontend>
 		<Core>
 			<item type="label" name="ProductAdded">
@@ -508,7 +508,7 @@
 			<item type="message" name="CatalogAllComments">
 				<translation language="nl"><![CDATA[Alle reacties op je product.]]></translation>
 				<translation language="en"><![CDATA[All comments on your product.]]></translation>
-			</item>			
+			</item>
 			<item type="message" name="CatalogCommentInModeration">
 				<translation language="nl"><![CDATA[Je reactie wacht op goedkeuring.]]></translation>
 				<translation language="en"><![CDATA[Your comment is waiting for approval.]]></translation>

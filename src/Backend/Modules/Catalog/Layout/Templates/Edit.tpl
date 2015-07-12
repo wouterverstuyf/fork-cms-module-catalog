@@ -50,12 +50,12 @@
 								{$txtText} {$txtTextError}
 							</div>
 						</div>
-						
+
 						<div class="box" id="formElements">
 							<div class="heading">
 								<h3><label for="content">{$lblSpecifications|ucfirst}</label></h3>
 							</div>
-							
+
 							<div class="horizontal">
 								<div id="specificationsHolder" class="sequenceByDragAndDrop">
 									{option:specifications}
@@ -63,11 +63,11 @@
 											{$specifications.specification}
 										{/iteration:specifications}
 									{/option:specifications}
-									
+
 									{* This row always needs to be here. We show/hide it with javascript *}
 									<div id="noSpecifications" class="options"{option:specifications} style="display: none;"{/option:specifications}>
 										{$lblNoSpecifications}
-									</div>	
+									</div>
 								</div>
 							</div>
 
@@ -86,19 +86,19 @@
 									{$txtPrice} {$txtPriceError}
 								</div>
 								<div class="options">
-									<label for="categoryId">{$lblCategory|ucfirst}<abbr title="{$lblRequiredField}">*</abbr></label>
+									<label for="categoryId">{$lblCategories|ucfirst}<abbr title="{$lblRequiredField}">*</abbr></label>
 									{$ddmCategoryId} {$ddmCategoryIdError}
 								</div>
 								<div class="options">
 									<label for="tags">{$lblTags|ucfirst}</label>
 									{$txtTags} {$txtTagsError}
 								</div>
-                                <div class="options">
-                                    <label for="brandId">{$lblBrand|ucfirst}</label>
-                                    {$ddmBrandId} {$ddmBrandIdError}
-                                </div>
+                <div class="options">
+                    <label for="brandId">{$lblBrand|ucfirst}</label>
+                    {$ddmBrandId} {$ddmBrandIdError}
+                </div>
 							</div>
-							
+
 							<div class="box">
 								<div class="heading">
 									<h3>
@@ -109,7 +109,7 @@
 									{$ddmRelatedProducts} {$ddmRelatedProductsError}
 								</div>
 							</div>
-							
+
 					</td>
 				</tr>
 			</table>

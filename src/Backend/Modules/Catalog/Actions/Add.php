@@ -118,10 +118,9 @@ class Add extends BackendBaseActionAdd
 		$this->frm->addText('tags', null, null, 'inputText tagBox', 'inputTextError tagBox');
 		$this->frm->addDropdown('related_products', $this->allProductsGroupedByCategories, null, true);
 
-
-		$this->frm->addDropdown('category_id', $this->categories, \SpoonFilter::getGetValue('category', null, null, 'int'));
+		$this->frm->addDropdown('category_id', $this->categories, \SpoonFilter::getGetValue('category', null, null, 'int'), true);
 		$this->frm->addDropdown('brand_id', $this->brands);
-        $this->frm->getField('brand_id')->setDefaultElement('');
+    $this->frm->getField('brand_id')->setDefaultElement('');
 
 		$specificationsHTML = array();
 
@@ -132,18 +131,18 @@ class Add extends BackendBaseActionAdd
 			// @todo check if type is text or textarea..
 			$specificationText = $this->frm->addText($specificationName);
 			$specificationHTML = $specificationText->parse();
-			
+
 			// parse specification into template
 			$this->tpl->assign('id', $specification['id']);
 			$this->tpl->assign('label', $specification['title']);
 			$this->tpl->assign('field', $specificationHTML);
 			$this->tpl->assign('spec', true);
-			
-			$specificationsHTML[]['specification'] = $this->tpl->getContent(BACKEND_MODULE_PATH . '/Layout/Templates/Specification.tpl');
+
+			$specificationsHTML[]['specification'] = $this->tpl->getContent(BACKEND_MODULES_PATH . '/Catalog/Layout/Templates/Specification.tpl');
 		}
-		
+
 		$this->tpl->assign('specifications', $specificationsHTML);
-												
+
 		// meta
 		$this->meta = new BackendMeta($this->frm, null, 'title', true);
 	}
@@ -152,13 +151,13 @@ class Add extends BackendBaseActionAdd
 	 * Parse the page
 	 */
 	protected function parse()
-	{		
+	{
 		parent::parse();
-				
+
 		// get url
 		$url = BackendModel::getURLForBlock($this->URL->getModule(), 'detail');
 		$url404 = BackendModel::getURL(404);
-		
+
 		// parse additional variables
 		if($url404 != $url) $this->tpl->assign('detailURL', SITE_URL . $url);
 	}
@@ -168,18 +167,17 @@ class Add extends BackendBaseActionAdd
 	 */
 	protected function validateForm()
 	{
-		if($this->frm->isSubmitted()) {			
+		if($this->frm->isSubmitted()) {
 			$this->frm->cleanupFields();
 
 			// validation
 			$fields = $this->frm->getFields();
-						
+
 			// required fields
 			$fields['title']->isFilled(BL::err('FieldIsRequired'));
-			$fields['summary']->isFilled(BL::err('FieldIsRequired'));
 			$fields['category_id']->isFilled(BL::err('FieldIsRequired'));
 			if($fields['category_id']->getValue() == 'no_category') $fields['category_id']->addError(BL::err('FieldIsRequired'));
-			
+
 			// validate meta
 			$this->meta->validate();
 
@@ -187,50 +185,60 @@ class Add extends BackendBaseActionAdd
 				// build the item
 				$item['language'] = BL::getWorkingLanguage();
 				$item['title'] = $fields['title']->getValue();
-				$item['price'] = $fields['price']->getValue();
+				if(trim($fields['price']->getValue()) != '') $item['price'] = $fields['price']->getValue();
 				$item['summary'] = $fields['summary']->getValue();
 				$item['text'] = $fields['text']->getValue();
 				$item['allow_comments'] = $fields['allow_comments']->getChecked() ? 'Y' : 'N';
 				$item['num_comments'] = 0;
-				$item['sequence'] = BackendCatalogModel::getMaximumSequence() + 1;
-				$item['category_id'] = $fields['category_id']->getValue();
 				$item['brand_id'] = $fields['brand_id']->getValue();
 				$item['meta_id'] = $this->meta->save();
 
 				// insert it
-				$item['id'] = BackendCatalogModel::insert($item);				
-				
+				$item['id'] = BackendCatalogModel::insert($item);
+
+				// loop through selected categories and insert values
+				foreach($fields['category_id']->getValue() as $category) {
+					$itemProductCategory = array();
+					$itemProductCategory['product_id'] = $item['id'];
+					$itemProductCategory['category_id'] = $category;
+					$itemProductCategory['sequence'] = BackendCatalogModel::getMaximumSequence($category) + 1;
+
+					BackendCatalogModel::insertProductCategory($itemProductCategory);
+				}
+
 				$specificationArray = array();
-				
+
 				// loop trough specifications and insert values
 				foreach( $this->specifications as $specification) {
-					// build the specification 
+					// build the specification
 					$specificationArray['product_id'] = $item['id'];
 					$specificationArray['specification_id'] = $specification['id'];
 
 					$field = 'specification' . $specification['id'];
-					
+
 					// check if there is an value
-					if($fields[$field]->getValue() != null) { 
+					if($fields[$field]->getValue() != null) {
 						$specificationArray['value'] = $fields[$field]->getValue();
-						
+
 						// insert specification with product id and value
 						BackendCatalogModel::insertSpecificationValue($specificationArray);
 					}
 				}
-				
+
 				// save the tags
 				BackendTagsModel::saveTags($item['id'], $fields['tags']->getValue(), $this->URL->getModule());
-				
+
 				// save the related products
-				BackendCatalogModel::saveRelatedProducts($item['id'], $this->frm->getField('related_products')->getValue());
-				
+				if(!empty($this->allProductsGroupedByCategories)) {
+					BackendCatalogModel::saveRelatedProducts($item['id'], $this->frm->getField('related_products')->getValue());
+				}
+
 				// add search index
 				BackendSearchModel::saveIndex($this->getModule(), $item['id'], array('title' => $item['title'], 'summary' => $item['summary'], 'text' => $item['text']));
 
 				// trigger event
 				BackendModel::triggerEvent($this->getModule(), 'after_add', $item);
-				
+
 				// redirect page
 				$this->redirect(
 					BackendModel::createURLForAction('index') . '&report=added&highlight=row-' . $item['id']

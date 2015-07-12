@@ -17,7 +17,7 @@ use Backend\Core\Engine\Model as BackendModel;
 use Backend\Core\Engine\DataGridDB as BackendDataGridDB;
 use Backend\Core\Engine\DataGridFunctions as BackendDataGridFunctions;
 use Backend\Modules\Catalog\Engine\Model as BackendCatalogModel;
- 
+
 /**
  * This is the index-action (default), it will display the overview of products
  *
@@ -25,19 +25,19 @@ use Backend\Modules\Catalog\Engine\Model as BackendCatalogModel;
  */
 class Index extends BackendBaseActionIndex
 {
-	/**
-	 * The category where is filtered on
-	 *
-	 * @var	array
-	 */
-	private $category;
+  /**
+   * Filter variables.
+   *
+   * @var    array
+   */
+  private $filter;
 
-	/**
-	 * The id of the category where is filtered on
-	 *
-	 * @var	int
-	 */
-	private $categoryId;
+  /**
+   * Form.
+   *
+   * @var BackendForm
+   */
+  private $frm;
 
 	/**
 	 * DataGrids
@@ -45,32 +45,62 @@ class Index extends BackendBaseActionIndex
 	 * @var	SpoonDataGrid
 	 */
 	private $dgProducts;
-	
+
+  /**
+   * Builds the query for this datagrid.
+   *
+   * @return array  An array with two arguments containing the query and its parameters.
+   */
+  private function buildQuery()
+  {
+      // init var
+      $parameters = array();
+
+      // construct the query in the controller instead of the model as an allowed exception for data grid usage
+      $query = '
+      	SELECT i.id, i.title AS title, i.spotlight, pc.sequence
+		 		FROM catalog_products_categories AS pc
+		 		INNER JOIN catalog_categories AS c ON pc.category_id = c.id
+		 		LEFT JOIN catalog_products AS i ON pc.product_id = i.id';
+
+      $where = array();
+
+      $where[] = 'i.language = ?';
+      $parameters[] = BL::getWorkingLanguage();
+
+      // add category
+      if (isset($this->filter['category'])) {
+        $where[] = 'pc.category_id = ?';
+        $parameters[] = $this->filter['category'];
+      }
+
+      // add category
+      if (isset($this->filter['name'])) {
+        $where[] = 'i.title LIKE ?';
+        $parameters[] = '%' . $this->filter['name'] . '%';
+      }
+
+      // query
+      if (!empty($where)) {
+        $query .= ' WHERE ' . implode(' AND ', $where);
+      }
+
+      $query .= ' GROUP BY pc.product_id ORDER BY pc.sequence ASC';
+
+      // query with matching parameters
+      return array($query, $parameters);
+  }
+
+
 	/**
 	 * Execute the action
 	 */
 	public function execute()
 	{
 		parent::execute();
-		
-		$this->categoryId = \SpoonFilter::getGetValue('category', null, null, 'int');
-		if($this->categoryId == 0) $this->categoryId = null;
-		else {
-			// get category
-			$this->category = BackendCatalogModel::getCategory($this->categoryId);
-						
-			// reset
-			if(empty($this->category)) {
-				// reset GET to trick Spoon
-				$_GET['category'] = null;
-
-				// reset
-				$this->categoryId = null;
-			}
-		}
-		
+    $this->setFilter();
+    $this->loadForm();
 		$this->loadDataGrid();
-
 		$this->parse();
 		$this->display();
 	}
@@ -80,65 +110,81 @@ class Index extends BackendBaseActionIndex
 	 */
 	private function loadDataGrid()
 	{
-		// filter category
-		if($this->categoryId != null ) {			
-			// create datagrid
-			$this->dgProducts = new BackendDataGridDB(BackendCatalogModel::QRY_DATAGRID_BROWSE_FOR_CATEGORY, array($this->categoryId, BL::getWorkingLanguage()));
-			
-			// set the URL
-			$this->dgProducts->setURL('&amp;category=' . $this->categoryId, true);
-		} else {
-			// dont filter category
-			// create datagrid
-			$this->dgProducts = new BackendDataGridDB(BackendCatalogModel::QRY_DATAGRID_BROWSE, array(BL::getWorkingLanguage()));
+    // fetch query and parameters
+    list($query, $parameters) = $this->buildQuery();
+
+    // create datagrid
+    $this->dgProducts = new BackendDataGridDB($query, $parameters);
+
+		// // filter category
+		if($this->filter['category'] != null ) {
+			// sequence
+			$this->dgProducts->enableSequenceByDragAndDrop();
+			$this->dgProducts->setAttributes(array('data-action' => 'SequenceProducts'));
+
 		}
 
 		// our JS needs to know an id, so we can highlight it
-		$this->dgProducts->setRowAttributes(array('id' => 'row-[id]'));
-		$this->dgProducts->setColumnsHidden(array('category_id', 'sequence'));
-		
+		$this->dgProducts->setRowAttributes(array('id' => 'row-[id]', 'data-id' => '[id]-'.$this->filter['category']));
+
+		// hide columns
+ 		$this->dgProducts->setColumnsHidden('sequence');
+
 		// check if this action is allowed
-		if(BackendAuthentication::isAllowedAction('Edit')) {			
+		if(BackendAuthentication::isAllowedAction('Edit')) {
 			// set column URLs
-			$this->dgProducts->setColumnURL('title', BackendModel::createURLForAction('edit') . '&amp;id=[id]&amp;category=' . $this->categoryId);
+			$this->dgProducts->setColumnURL('title', BackendModel::createURLForAction('edit') . '&amp;id=[id]');
 
 			// add edit and media column
 			$this->dgProducts->addColumn('media', null, BL::lbl('Media'), BackendModel::createURLForAction('media') . '&amp;id=[id]', BL::lbl('Media'));
-			$this->dgProducts->addColumn('edit', null, BL::lbl('Edit'), BackendModel::createURLForAction('edit') . '&amp;id=[id]&amp;category=' . $this->categoryId, BL::lbl('Edit'));
-		
+			$this->dgProducts->addColumn('edit', null, BL::lbl('Edit'), BackendModel::createURLForAction('edit') . '&amp;id=[id]', BL::lbl('Edit'));
+
 			// set media column function
 			$this->dgProducts->setColumnFunction(array(__CLASS__, 'setMediaLink'), array('[id]'), 'media');
 		}
 	}
 
+  /**
+   * Load the form.
+   */
+  private function loadForm()
+  {
+      // create form
+      $this->frm = new BackendForm('filter', BackendModel::createURLForAction(), 'get');
+
+      // values for dropdowns
+      $categories = BackendCatalogModel::getCategoriesAsPairs();
+
+			// add fields
+			$this->frm->addText('name', $this->filter['name']);
+			$this->frm->addDropdown('category', $categories, $this->filter['category']);
+			$this->frm->getField('category')->setDefaultElement('');
+
+      // manually parse fields
+      $this->frm->parse($this->tpl);
+  }
+
 	/**
 	 * Parse the page
 	 */
 	protected function parse()
-	{		
+	{
 		// parse the datagrid for all products
 		$this->tpl->assign('dgProducts', ($this->dgProducts->getNumResults() != 0) ? $this->dgProducts->getContent() : false);
-	
-		// get categories
-		$categories = BackendCatalogModel::getCategories(true);
-				
-		// multiple categories?
-		if(count($categories) > 1) {
-			// create form
-			$frm = new BackendForm('filter', null, 'get', true);
 
-			// create element
-			$frm->addDropdown('category', $categories, $this->categoryId);
-			$frm->getField('category')->setDefaultElement('');
-			
-			// parse the form
-			$frm->parse($this->tpl);
-		}
-
-		// parse category
-		if(!empty($this->category)) $this->tpl->assign('filterCategory', $this->category);	
+    // parse filter
+    $this->tpl->assign($this->filter);
 	}
-	
+
+  /**
+   * Sets the filter based on the $_GET array.
+   */
+  private function setFilter()
+  {
+    $this->filter['category'] = $this->getParameter('category');
+    $this->filter['name'] = $this->getParameter('name');
+  }
+
 	/**
 	 * Sets a link to the media overview
 	 *
