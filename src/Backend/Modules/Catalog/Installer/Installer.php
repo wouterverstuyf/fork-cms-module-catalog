@@ -200,6 +200,20 @@ class Installer extends ModuleInstaller
         $this->insertExtra('Catalog', 'widget', 'RecentProducts', 'RecentProducts', null, 'N', 1006);
         $this->insertExtra('Catalog', 'widget', 'Brands', 'Brands', null, 'N', 1007);
 
+        // get search extra id
+        $searchId = (int) $this->getDB()->getVar(
+            'SELECT id FROM modules_extras
+             WHERE module = ? AND type = ? AND action = ?',
+            array('Search', 'widget', 'Form')
+        );
+        // get shopping cart extra id
+        $shoppingCartId = (int) $this->getDB()->getVar(
+            'SELECT id FROM modules_extras
+             WHERE module = ? AND type = ? AND action = ?',
+            array('Catalog', 'widget', 'ShoppingCart')
+        );
+
+        // loop languages
         foreach ($this->getLanguages() as $language)
         {
             $this->defaultCategoryId = $this->getCategory($language);
@@ -224,10 +238,15 @@ class Installer extends ModuleInstaller
             )
             {
                 // insert page
-                $this->insertPage(array('title' => 'Catalog',
-                        'language' => $language),
+                $this->insertPage(
+                    array('title' => 'Catalog',
+                        'language' => $language
+                    ),
                     null,
-                    array('extra_id' => $catalogId));
+                    array('extra_id' => $catalogId, 'position' => 'main'),
+                    array('extra_id' => $searchId, 'position' => 'top'),
+                    array('extra_id' => $shoppingCartId, 'position' => 'left')
+                );
             }
 
             $this->installExampleData($language);
@@ -270,7 +289,6 @@ class Installer extends ModuleInstaller
         {
             // insert sample product
             $productId = $db->insert('catalog_products', array(
-                'category_id' => $this->defaultCategoryId,
                 'brand_id' => $this->defaultBrandId,
                 'meta_id' => $this->insertMeta('Samsung', 'Samsung', 'Samsung', 'samsung'),
                 'language' => $language,
@@ -292,7 +310,13 @@ class Installer extends ModuleInstaller
                 'price' => '399',
                 'allow_comments' => 'Y',
                 'num_comments' => '0',
-                'sequence' => 1
+            ));
+
+            // insert product category
+            $db->insert('catalog_products_categories', array(
+                'product_id' => $productId,
+                'category_id' => $this->defaultCategoryId,
+                'sequence' => 1,
             ));
 
             // insert sample specification 1
