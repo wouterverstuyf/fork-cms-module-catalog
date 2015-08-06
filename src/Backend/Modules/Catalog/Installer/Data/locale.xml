@@ -421,6 +421,10 @@
 				<translation language="nl"><![CDATA[prijs]]></translation>
 				<translation language="en"><![CDATA[price]]></translation>
 			</item>
+			<item type="label" name="ReadMore">
+				<translation language="nl"><![CDATA[lees meer]]></translation>
+				<translation language="en"><![CDATA[read more]]></translation>
+			</item>
 			<item type="label" name="Product">
 				<translation language="nl"><![CDATA[product]]></translation>
 				<translation language="en"><![CDATA[product]]></translation>
