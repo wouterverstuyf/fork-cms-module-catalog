@@ -63,7 +63,13 @@ class Category extends FrontendBaseBlock
      *
      * @var    array
      */
-    protected $pagination = array('limit' => 10, 'offset' => 0, 'requested_page' => 1, 'num_items' => null, 'num_pages' => null);
+    protected $pagination = array(
+        'limit' => 12,
+        'offset' => 0,
+        'requested_page' => 1,
+        'num_items' => null,
+        'num_pages' => null
+    );
 
     /**
      * Execute the action
@@ -128,9 +134,6 @@ class Category extends FrontendBaseBlock
      */
     protected function parse()
     {
-        // add css
-        $this->header->addCSS('/src/Frontend/Modules/' . $this->getModule() . '/Layout/Css/catalog.css');
-
         // add noty js
         $this->header->addJS('/src/Frontend/Modules/' . $this->getModule() . '/Js/noty/packaged/jquery.noty.packaged.min.js');
 

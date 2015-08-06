@@ -29,13 +29,6 @@ class Index extends FrontendBaseBlock
     private $products;
 
     /**
-     * All categories in flat view
-     *
-     * @var    array
-     */
-    private $categories;
-
-    /**
      * All categories in tree view
      *
      * @var    array
@@ -87,9 +80,6 @@ class Index extends FrontendBaseBlock
         $this->pagination['requested_page'] = $requestedPage;
         $this->pagination['offset'] = ($this->pagination['requested_page'] * $this->pagination['limit']) - $this->pagination['limit'];
 
-        // get all categories
-        $this->categories = FrontendCatalogModel::getAllCategories();
-
         // get tree of all categories
         $this->categoriesTree = FrontendCatalogModel::getCategoriesTree();
 
@@ -110,9 +100,6 @@ class Index extends FrontendBaseBlock
 
         // assign items
         $this->tpl->assign('products', $this->products);
-
-        // flat array of categories
-        $this->tpl->assign('categoriesFlat', $this->categories);
 
         // multidimensional array of categories
         $this->tpl->assign('categoriesTree', $this->categoriesTree);

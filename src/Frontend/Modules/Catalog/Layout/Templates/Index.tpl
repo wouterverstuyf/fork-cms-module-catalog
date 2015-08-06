@@ -1,4 +1,4 @@
-{*	
+{*
 	variables that are available:
 	- {$categoriesFlat}: contains a flat array of all categories
 	- {$categoriesTree}: multidimensional array of categories/subcategories
@@ -18,3 +18,12 @@
 	{$categoriesHTML}
  </div>
 {/option:categoriesHTML}
+
+{option:products}
+  <h3>{$lblProducts|ucfirst}</h3>
+  <ul>
+    {iteration:products}
+    <li>{$products.title}</li>
+    {/iteration:products}
+  </ul>
+{/option:products}

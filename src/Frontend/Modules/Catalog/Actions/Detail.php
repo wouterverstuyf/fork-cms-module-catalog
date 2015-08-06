@@ -33,6 +33,13 @@ class Detail extends FrontendBaseBlock
     private $record;
 
     /**
+     * The categories of a product
+     *
+     * @var    array
+     */
+    private $categories;
+
+    /**
      * The specifications of a product
      *
      * @var    array
@@ -121,6 +128,7 @@ class Detail extends FrontendBaseBlock
 
         // get information
         $this->record = FrontendCatalogModel::get($this->URL->getParameter(1));
+        $this->categories = FrontendCatalogModel::getProductCategories($this->record['id']);
         $this->comments = FrontendCatalogModel::getComments($this->record['id']);
         $this->specifications = FrontendCatalogModel::getProductSpecifications($this->record['id']);
         $this->tags = FrontendTagsModel::getForItem('Catalog', $this->record['id']);
@@ -200,6 +208,7 @@ class Detail extends FrontendBaseBlock
         if ($this->files != null) $this->tpl->assign('files', $this->files);
         $this->tpl->assign('specifications', $this->specifications);
         $this->tpl->assign('tags', $this->tags);
+        $this->tpl->assign('categories', $this->categories);
         //$this->tpl->assign('related', $this->relatedProducts);
 
         // count comments

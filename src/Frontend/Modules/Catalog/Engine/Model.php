@@ -23,6 +23,112 @@ use Frontend\Modules\Tags\Engine\TagsInterface as FrontendTagsInterface;
  */
 class Model implements FrontendTagsInterface
 {
+
+    /**
+     * Build the category tree
+     *
+     * @param array $items
+     * @return array
+     */
+    private static function buildTree($items, $id = 0)
+    {
+        $children = array();
+
+        // loop parents
+        foreach ($items as &$item)
+        {
+            $children[(!empty($item['parent_id']) ? $item['parent_id'] : 0)][] = &$item;
+            unset($item);
+        }
+
+        // loop children
+        foreach ($items as &$item)
+        {
+            // if children
+            if (isset($children[$item['id']]))
+            {
+                // insert
+                $item['children'] = $children[$item['id']];
+            }
+        }
+
+        // check if children exists
+        if (isset($children[$id]))
+        {
+            return $children[$id];
+        } else
+        {
+            // if no children return empty array
+            return array();
+        }
+    }
+
+    /**
+     * Delete all spam
+     *
+     */
+    public static function deleteCompletedOrders()
+    {
+        $db = FrontendModel::getContainer()->get('database');
+
+        // get ids
+        $itemIds = (array)$db->getColumn('SELECT i.id
+             FROM catalog_orders AS i
+             WHERE status = ?', array('completed'));
+
+        // update record
+        $db->delete('catalog_orders', 'status = ?', array('completed'));
+
+        // invalidate the cache for blog
+        FrontendModel::invalidateFrontendCache('catalog', FL::getWorkingLanguage());
+    }
+
+    /**
+     * Delete a value within an order
+     *
+     * @param int orderId
+     * @param int productId
+     */
+    public static function deleteOrderValue($orderId, $productId)
+    {
+        $db = FrontendModel::getContainer()->get('database');
+
+        // update record
+        $db->delete('catalog_orders_values', 'order_id = ? AND product_id = ?', array((int)$orderId, (int)$productId));
+
+        // invalidate the cache for catalog
+        FrontendModel::invalidateFrontendCache('catalog', FL::getWorkingLanguage());
+    }
+
+    /**
+     * Does the order exist?
+     *
+     * @param int $id
+     * @return bool
+     */
+    public static function existsOrder($id)
+    {
+        return (bool)FrontendModel::getContainer()->get('database')->getVar('SELECT 1
+             FROM catalog_orders AS i
+             WHERE i.id = ?
+             LIMIT 1', array((int)$id));
+    }
+
+    /**
+     * Do the values of the order exist?
+     *
+     * @param int $productId
+     * @param int $orderId
+     * @return bool
+     */
+    public static function existsOrderValue($productId, $orderId)
+    {
+        return (bool)FrontendModel::getContainer()->get('database')->getVar('SELECT 1
+             FROM catalog_orders_values AS i
+             WHERE i.product_id = ? AND i.order_id = ?
+             LIMIT 1', array((int)$productId, (int)$orderId));
+    }
+
     /**
      * Fetches a certain item
      *
@@ -32,47 +138,345 @@ class Model implements FrontendTagsInterface
      */
     public static function get($url = null, $id = null)
     {
-        if (!$id)
+    if (!$id)
         {
             $item = (array)FrontendModel::getContainer()->get('database')->getRecord('SELECT i.*,
-				 m.keywords AS meta_keywords, m.keywords_overwrite AS meta_keywords_overwrite,
-				 m.description AS meta_description, m.description_overwrite AS meta_description_overwrite,
-				 m.title AS meta_title, m.title_overwrite AS meta_title_overwrite, m.url, m2.url AS category_url, m2.title AS category_title
-				 FROM catalog_products AS i
-				 INNER JOIN meta AS m ON i.meta_id = m.id
-				 INNER JOIN catalog_categories AS c ON i.category_id = c.id
-				 INNER JOIN meta AS m2 ON c.meta_id = m2.id
-				 WHERE m.url = ? AND i.language = ?', array((string)$url, FRONTEND_LANGUAGE));
-        } else
-        {
+                 m.keywords AS meta_keywords, m.keywords_overwrite AS meta_keywords_overwrite,
+                 m.description AS meta_description, m.description_overwrite AS meta_description_overwrite,
+                 m.title AS meta_title, m.title_overwrite AS meta_title_overwrite
+                 FROM catalog_products AS i
+                 INNER JOIN meta AS m ON i.meta_id = m.id
+                 WHERE m.url = ? AND i.language = ?', array((string)$url, FRONTEND_LANGUAGE));
+    } else {
             $item = (array)FrontendModel::getContainer()->get('database')->getRecord('SELECT i.*,
-				 m.keywords AS meta_keywords, m.keywords_overwrite AS meta_keywords_overwrite,
-				 m.description AS meta_description, m.description_overwrite AS meta_description_overwrite,
-				 m.title AS meta_title, m.title_overwrite AS meta_title_overwrite, m.url, m2.url AS category_url, m2.title AS category_title
-				 FROM catalog_products AS i
-				 INNER JOIN meta AS m ON i.meta_id = m.id
-				 INNER JOIN catalog_categories AS c ON i.category_id = c.id
-				 INNER JOIN meta AS m2 ON c.meta_id = m2.id
-				 WHERE i.id = ? AND i.language = ?', array((int)$id, FRONTEND_LANGUAGE));
+                 m.keywords AS meta_keywords, m.keywords_overwrite AS meta_keywords_overwrite,
+                 m.description AS meta_description, m.description_overwrite AS meta_description_overwrite,
+                 m.title AS meta_title, m.title_overwrite AS meta_title_overwrite, m.url
+                 FROM catalog_products AS i
+                 INNER JOIN meta AS m ON i.meta_id = m.id
+                 WHERE i.id = ? AND i.language = ?', array((int)$id, FRONTEND_LANGUAGE));
         }
 
         // no results?
         if (empty($item)) return array();
 
-        // create full url
-        $item['full_url'] = FrontendNavigation::getURLForBlock('Catalog', 'Detail') . '/' . $item['url'];
-        $item['category_full_url'] = FrontendNavigation::getURLForBlock('Catalog', 'Category') . '/' . $item['category_url'];
-
         // add images
         if ($images = self::getImages((int)$item['id']))
         {
-            // Use first image as the main image
-            $item = array_merge($images[0], $item);
-            // Add the other images as array
-            $item['images'] = $images;
+          // Use first image as the main image
+          $item = array_merge($images[0], $item);
+
+          // Add the other images as array
+          $item['images'] = $images;
         }
 
         return $item;
+    }
+
+    /**
+     * Get all items (at least a chunk)
+     *
+     * @param int [optional] $limit The number of items to get.
+     * @param int [optional] $offset The offset.
+     * @return array
+     */
+    public static function getAll($limit = 10, $offset = 0)
+    {
+        $items = (array)FrontendModel::getContainer()->get('database')->getRecords('SELECT i.*, m.url
+             FROM catalog_products AS i
+             INNER JOIN meta AS m ON i.meta_id = m.id
+             WHERE i.language = ?
+             ORDER BY i.created_on ASC, i.id DESC LIMIT ?, ?', array(FRONTEND_LANGUAGE, (int)$offset, (int)$limit));
+
+        // no results?
+        if (empty($items)) return array();
+
+        // get detail action url
+        $detailUrl = FrontendNavigation::getURLForBlock('Catalog', 'Detail');
+
+        // prepare items for search
+        foreach ($items as &$item)
+        {
+            $item['full_url'] = $detailUrl . '/' . $item['url'];
+        }
+
+        // return
+        return $items;
+    }
+
+    /**
+     * Get all categories
+     *
+     * @param int $id
+     * @param string $url
+     * @return array
+     */
+    public static function getAllBrands()
+    {
+
+        $items = (array)FrontendModel::getContainer()->get('database')->getRecords('SELECT i.id, i.title,i.image, m.url, COUNT(p.id) AS total, m.data AS meta_data
+                 FROM catalog_brands AS i
+                 INNER JOIN meta AS m ON i.meta_id = m.id
+                 LEFT OUTER JOIN catalog_products AS p ON p.brand_id = i.id
+                 GROUP BY i.id
+                 ORDER BY i.sequence', null, 'id');
+
+
+        foreach ($items as &$row)
+        {
+            // create full url
+            $row['full_url'] = FrontendNavigation::getURLForBlock('Catalog', 'Brand') . '/' . $row['url'];
+
+            if (isset($row['meta_data'])) $row['meta_data'] = @unserialize($row['meta_data']);
+        }
+
+        return $items;
+    }
+
+    /**
+     * Get all category items (at least a chunk)
+     *
+     * @param int $categoryId
+     * @param int [optional] $limit The number of items to get.
+     * @param int [optional] $offset The offset.
+     * @return array
+     */
+    public static function getAllByBrand($brandId, $limit = 10, $offset = 0)
+    {
+        $items = (array)FrontendModel::getContainer()->get('database')->getRecords('SELECT i.*, m.url
+             FROM catalog_products AS i
+             INNER JOIN meta AS m ON i.meta_id = m.id
+             WHERE i.brand_id = ? AND i.language = ?
+             ORDER BY i.sequence ASC, i.id DESC LIMIT ?, ?', array($brandId, FRONTEND_LANGUAGE, (int)$offset, (int)$limit));
+
+        // no results?
+        if (empty($items)) return array();
+
+        // get detail action url
+        $detailUrl = FrontendNavigation::getURLForBlock('Catalog', 'Detail');
+
+        // prepare items for search
+        foreach ($items as &$item)
+        {
+            $img = FrontendModel::getContainer()->get('database')->getRecord('SELECT * FROM catalog_images WHERE product_id = ? ORDER BY sequence', array((int)$item['id']));
+            if ($img) $item['image'] = FRONTEND_FILES_URL . '/catalog/' . $item['id'] . '/200x200/' . $img['filename'];
+            else $item['image'] = '/' . APPLICATION . '/modules/catalog/layout/images/dummy.png';
+
+            $item['full_url'] = $detailUrl . '/' . $item['url'];
+        }
+
+        // return
+        return $items;
+    }
+
+    /**
+     * Get all category items (at least a chunk)
+     *
+     * @param int $categoryId
+     * @param int [optional] $limit The number of items to get.
+     * @param int [optional] $offset The offset.
+     * @return array
+     */
+    public static function getAllByCategory($categoryId, $limit = 10, $offset = 0)
+    {
+        $items = (array)FrontendModel::getContainer()->get('database')->getRecords('SELECT i.*, m.url
+             FROM catalog_products AS i
+             INNER JOIN meta AS m ON i.meta_id = m.id
+             INNER JOIN catalog_products_categories pc ON i.id = pc.product_id
+             WHERE pc.category_id = ? AND i.language = ?
+             ORDER BY pc.sequence ASC, i.id DESC LIMIT ?, ?',
+            array($categoryId, FRONTEND_LANGUAGE, (int)$offset, (int)$limit));
+
+        // no results?
+        if (empty($items)) return array();
+
+        // get detail action url
+        $detailUrl = FrontendNavigation::getURLForBlock('Catalog', 'Detail');
+
+        // prepare items for search
+        foreach ($items as &$item)
+        {
+            $img = FrontendModel::getContainer()->get('database')->getRecord('SELECT * FROM catalog_images WHERE product_id = ? ORDER BY sequence', array((int)$item['id']));
+            if ($img) $item['image'] = FRONTEND_FILES_URL . '/catalog/' . $item['id'] . '/200x200/' . $img['filename'];
+            else $item['image'] = '/' . APPLICATION . '/modules/catalog/layout/images/dummy.png';
+
+            $item['full_url'] = $detailUrl . '/' . $item['url'];
+        }
+
+        // return
+        return $items;
+    }
+
+    /**
+     * Get all categories
+     *
+     * @param int $id
+     * @param string $url
+     * @return array
+     */
+    public static function getAllCategories($id = 0, $url = null)
+    {
+
+        // category id given
+        if ($id != 0)
+        {
+            $items = (array)FrontendModel::getContainer()->get('database')->getRecords('SELECT c.id, c.title, m.url, m.data AS meta_data
+                 FROM catalog_categories AS c
+                 INNER JOIN meta AS m ON c.meta_id = m.id
+                 WHERE c.parent_id = ? AND c.language = ?
+                 GROUP BY c.id
+                 ORDER BY c.sequence', array($id, FRONTEND_LANGUAGE), 'id');
+        } else
+        {
+            // no category given
+            $items = (array)FrontendModel::getContainer()->get('database')->getRecords('SELECT c.id, c.title, m.url, COUNT(p.product_id) AS total, m.data AS meta_data, parent_id
+                 FROM catalog_categories AS c
+                 INNER JOIN meta AS m ON c.meta_id = m.id
+                 LEFT OUTER JOIN catalog_products_categories AS p ON p.category_id = c.id
+                 WHERE c.language = ?
+                 GROUP BY c.id
+                 ORDER BY p.sequence', array(FRONTEND_LANGUAGE), 'id');
+        }
+
+        // loop items and unserialize
+        foreach ($items as &$row)
+        {
+            // set image path
+            $img = FrontendModel::getContainer()->get('database')->getRecord('SELECT * FROM catalog_categories WHERE id = ?', array((int)$row['id']));
+
+            if ($img){
+                $row['image'] = FRONTEND_FILES_URL . '/catalog/categories/' . $row['id'] . '/source/' . $img['image'];
+                $row['thumbnail'] = FRONTEND_FILES_URL . '/catalog/categories/' . $row['id'] . '/150x150/' . $img['image'];
+            } else {
+                $row['image'] = '/' . APPLICATION . '/modules/catalog/layout/images/dummy.png';
+            };
+
+            // create full url
+            if ($url != null)
+            {
+                $row['full_url'] = FrontendNavigation::getURLForBlock('Catalog', 'Category') . '/' . $url . '/' . $row['url'];
+            } else
+            {
+                $row['full_url'] = FrontendNavigation::getURLForBlock('Catalog', 'Category') . '/' . $row['url'];
+            }
+
+            if (isset($row['meta_data'])) $row['meta_data'] = @unserialize($row['meta_data']);
+        }
+
+        return $items;
+    }
+
+    /**
+     * Get the number of items
+     *
+     * @return int
+     */
+    public static function getAllCount()
+    {
+        return (int)FrontendModel::getContainer()->get('database')->getVar('SELECT COUNT(i.id) AS count
+             FROM catalog_products AS i');
+    }
+
+    /**
+     * Fetches a certain brand
+     *
+     * @param int $id
+     * @return array
+     */
+    public static function getBrand($id)
+    {
+        $item = (array)FrontendModel::getContainer()->get('database')->getRecord('SELECT i.*,
+             m.keywords AS meta_keywords, m.keywords_overwrite AS meta_keywords_overwrite,
+             m.description AS meta_description, m.description_overwrite AS meta_description_overwrite,
+             m.title AS meta_title, m.title_overwrite AS meta_title_overwrite, m.url AS url
+             FROM catalog_brands AS i
+             INNER JOIN meta AS m ON i.meta_id = m.id
+             WHERE i.id=?', array((int)$id));
+
+        // create full url
+        $item['full_url'] = FrontendNavigation::getURLForBlock('Catalog', 'Brand') . '/' . $item['url'];
+
+        return $item;
+    }
+
+    /**
+     * Fetches a certain category
+     *
+     * @param string $URL
+     * @return array
+     */
+    public static function getBrandFromUrl($URL)
+    {
+        $item = (array)FrontendModel::getContainer()->get('database')->getRecord('SELECT i.*,
+             m.keywords AS meta_keywords, m.keywords_overwrite AS meta_keywords_overwrite,
+             m.description AS meta_description, m.description_overwrite AS meta_description_overwrite,
+             m.title AS meta_title, m.title_overwrite AS meta_title_overwrite, m.url
+             FROM catalog_brands AS i
+             INNER JOIN meta AS m ON i.meta_id = m.id
+             WHERE m.url = ?', array((string)$URL));
+
+        // no results?
+        if (empty($item)) return array();
+
+        // create full url
+        $item['full_url'] = FrontendNavigation::getURLForBlock('Catalog', 'Brand') . '/' . $item['url'];
+
+        return $item;
+    }
+
+    /**
+     * Get all category items within a tree structure
+     *
+     * @return array
+     */
+    public static function getCategoriesTree($id = 0)
+    {
+        $items = (array)FrontendModel::getContainer()->get('database')->getRecords('SELECT c.id AS id, c.title, m.url, COUNT(pc.product_id) AS total, m.data AS meta_data, parent_id
+                 FROM catalog_categories AS c
+                 INNER JOIN meta AS m ON c.meta_id = m.id
+                 LEFT OUTER JOIN catalog_products_categories pc ON c.id = pc.category_id
+                 WHERE c.language = ?
+                 GROUP BY c.id
+                 ORDER BY c.sequence', array(FRONTEND_LANGUAGE), 'id');
+
+        // init var
+        $baseUrl = FrontendNavigation::getURLForBlock('Catalog', 'Category');
+
+        // loop items and unserialize
+        foreach ($items as &$row)
+        {
+            // set image path
+            $img = FrontendModel::getContainer()->get('database')->getRecord('SELECT * FROM catalog_categories WHERE id = ?', array((int)$row['id']));
+
+            if ($img){
+                $row['image'] = FRONTEND_FILES_URL . '/catalog/categories/' . $row['id'] . '/source/' . $img['image'];
+                $row['thumbnail'] = FRONTEND_FILES_URL . '/catalog/categories/' . $row['id'] . '/150x150/' . $img['image'];
+            } else {
+                $row['image'] = '/' . APPLICATION . '/modules/catalog/layout/images/dummy.png';
+            };
+
+            // set nested urls
+            $paths = self::traverseUp($items, $row);
+            if (!empty($paths))
+            {
+                $url = implode('/', $paths);
+                $row['full_url'] = $baseUrl . '/' . $url;
+            }
+
+            if (isset($row['meta_data'])) $row['meta_data'] = @unserialize($row['meta_data']);
+        }
+
+        // convert flat array in tree
+        if ($id != null)
+        {
+            // parent id is given
+            $items = self::buildTree($items, $id);
+        } else
+        {
+            $items = self::buildTree($items);
+        }
+
+        return $items;
     }
 
     /**
@@ -120,139 +524,6 @@ class Model implements FrontendTagsInterface
             $productAmount = (int)$item['amount'];
             $productPrice = (int)$item['price'];
             $item['subtotal_price'] = $productAmount * $productPrice;
-        }
-
-        return $items;
-    }
-
-    /**
-     * Get all items (at least a chunk)
-     *
-     * @param int [optional] $limit The number of items to get.
-     * @param int [optional] $offset The offset.
-     * @return array
-     */
-    public static function getAll($limit = 10, $offset = 0)
-    {
-        $items = (array)FrontendModel::getContainer()->get('database')->getRecords('SELECT i.*, m.url
-			 FROM catalog_products AS i
-			 INNER JOIN meta AS m ON i.meta_id = m.id
-			 WHERE i.language = ?
-			 ORDER BY i.created_on ASC, i.id DESC LIMIT ?, ?', array(FRONTEND_LANGUAGE, (int)$offset, (int)$limit));
-
-        // no results?
-        if (empty($items)) return array();
-
-        // get detail action url
-        $detailUrl = FrontendNavigation::getURLForBlock('Catalog', 'Detail');
-
-        // prepare items for search
-        foreach ($items as &$item)
-        {
-            $item['full_url'] = $detailUrl . '/' . $item['url'];
-        }
-
-        // return
-        return $items;
-    }
-
-    /**
-     * Get the number of items
-     *
-     * @return int
-     */
-    public static function getAllCount()
-    {
-        return (int)FrontendModel::getContainer()->get('database')->getVar('SELECT COUNT(i.id) AS count
-			 FROM catalog_products AS i');
-    }
-
-    /**
-     * Get all category items (at least a chunk)
-     *
-     * @param int $categoryId
-     * @param int [optional] $limit The number of items to get.
-     * @param int [optional] $offset The offset.
-     * @return array
-     */
-    public static function getAllByCategory($categoryId, $limit = 10, $offset = 0)
-    {
-        $items = (array)FrontendModel::getContainer()->get('database')->getRecords('SELECT i.*, m.url
-			 FROM catalog_products AS i
-			 INNER JOIN meta AS m ON i.meta_id = m.id
-			 WHERE i.category_id = ? AND i.language = ?
-			 ORDER BY i.sequence ASC, i.id DESC LIMIT ?, ?', array($categoryId, FRONTEND_LANGUAGE, (int)$offset, (int)$limit));
-
-        // no results?
-        if (empty($items)) return array();
-
-        // get detail action url
-        $detailUrl = FrontendNavigation::getURLForBlock('Catalog', 'Detail');
-
-        // prepare items for search
-        foreach ($items as &$item)
-        {
-            $img = FrontendModel::getContainer()->get('database')->getRecord('SELECT * FROM catalog_images WHERE product_id = ? ORDER BY sequence', array((int)$item['id']));
-            if ($img) $item['image'] = FRONTEND_FILES_URL . '/catalog/' . $item['id'] . '/200x200/' . $img['filename'];
-            else $item['image'] = '/' . APPLICATION . '/modules/catalog/layout/images/dummy.png';
-
-            $item['full_url'] = $detailUrl . '/' . $item['url'];
-        }
-
-        // return
-        return $items;
-    }
-
-    /**
-     * Get all category items within a tree structure
-     *
-     * @return array
-     */
-    public static function getCategoriesTree($id = 0)
-    {
-        $items = (array)FrontendModel::getContainer()->get('database')->getRecords('SELECT c.id AS id, c.title, m.url, COUNT(p.id) AS total, m.data AS meta_data, parent_id
-				 FROM catalog_categories AS c
-				 INNER JOIN meta AS m ON c.meta_id = m.id
-				 LEFT OUTER JOIN catalog_products AS p ON p.category_id = c.id
-				 WHERE c.language = ?
-				 GROUP BY c.id
-				 ORDER BY c.sequence', array(FRONTEND_LANGUAGE), 'id');
-
-        // init var
-        $baseUrl = FrontendNavigation::getURLForBlock('Catalog', 'Category');
-
-        // loop items and unserialize
-        foreach ($items as &$row)
-        {
-            // set image path
-            $img = FrontendModel::getContainer()->get('database')->getRecord('SELECT * FROM catalog_categories WHERE id = ?', array((int)$row['id']));
-
-            if ($img){
-                $row['image'] = FRONTEND_FILES_URL . '/catalog/categories/' . $row['id'] . '/source/' . $img['image'];
-                $row['thumbnail'] = FRONTEND_FILES_URL . '/catalog/categories/' . $row['id'] . '/150x150/' . $img['image'];
-            } else {
-                $row['image'] = '/' . APPLICATION . '/modules/catalog/layout/images/dummy.png';
-            };
-
-            // set nested urls
-            $paths = self::traverseUp($items, $row);
-            if (!empty($paths))
-            {
-                $url = implode('/', $paths);
-                $row['full_url'] = $baseUrl . '/' . $url;
-            }
-
-            if (isset($row['meta_data'])) $row['meta_data'] = @unserialize($row['meta_data']);
-        }
-
-        // convert flat array in tree
-        if ($id != null)
-        {
-            // parent id is given
-            $items = self::buildTree($items, $id);
-        } else
-        {
-            $items = self::buildTree($items);
         }
 
         return $items;
@@ -316,44 +587,7 @@ class Model implements FrontendTagsInterface
         return self::get($itemURL);
     }
 
-    /**
-     * Build the category tree
-     *
-     * @param array $items
-     * @return array
-     */
-    private static function buildTree($items, $id = 0)
-    {
-        $children = array();
 
-        // loop parents
-        foreach ($items as &$item)
-        {
-            $children[(!empty($item['parent_id']) ? $item['parent_id'] : 0)][] = &$item;
-            unset($item);
-        }
-
-        // loop children
-        foreach ($items as &$item)
-        {
-            // if children
-            if (isset($children[$item['id']]))
-            {
-                // insert
-                $item['children'] = $children[$item['id']];
-            }
-        }
-
-        // check if children exists
-        if (isset($children[$id]))
-        {
-            return $children[$id];
-        } else
-        {
-            // if no children return empty array
-            return array();
-        }
-    }
 
     /**
      * Get the tree in HTML
@@ -444,65 +678,6 @@ class Model implements FrontendTagsInterface
         return $paths;
     }
 
-    /**
-     * Get all categories
-     *
-     * @param int $id
-     * @param string $url
-     * @return array
-     */
-    public static function getAllCategories($id = 0, $url = null)
-    {
-
-        // category id given
-        if ($id != 0)
-        {
-            $items = (array)FrontendModel::getContainer()->get('database')->getRecords('SELECT c.id, c.title, m.url, COUNT(p.id) AS total, m.data AS meta_data
-				 FROM catalog_categories AS c
-				 INNER JOIN meta AS m ON c.meta_id = m.id
-				 LEFT OUTER JOIN catalog_products AS p ON p.category_id = c.id
-				 WHERE c.parent_id = ? AND c.language = ?
-				 GROUP BY c.id
-				 ORDER BY c.sequence', array($id, FRONTEND_LANGUAGE), 'id');
-        } else
-        {
-            // no category given
-            $items = (array)FrontendModel::getContainer()->get('database')->getRecords('SELECT c.id, c.title, m.url, COUNT(p.id) AS total, m.data AS meta_data, parent_id
-				 FROM catalog_categories AS c
-				 INNER JOIN meta AS m ON c.meta_id = m.id
-				 LEFT OUTER JOIN catalog_products AS p ON p.category_id = c.id
-				 WHERE c.language = ?
-				 GROUP BY c.id
-				 ORDER BY c.sequence', array(FRONTEND_LANGUAGE), 'id');
-        }
-
-        // loop items and unserialize
-        foreach ($items as &$row)
-        {
-            // set image path
-            $img = FrontendModel::getContainer()->get('database')->getRecord('SELECT * FROM catalog_categories WHERE id = ?', array((int)$row['id']));
-
-            if ($img){
-                $row['image'] = FRONTEND_FILES_URL . '/catalog/categories/' . $row['id'] . '/source/' . $img['image'];
-                $row['thumbnail'] = FRONTEND_FILES_URL . '/catalog/categories/' . $row['id'] . '/150x150/' . $img['image'];
-            } else {
-                $row['image'] = '/' . APPLICATION . '/modules/catalog/layout/images/dummy.png';
-            };
-
-            // create full url
-            if ($url != null)
-            {
-                $row['full_url'] = FrontendNavigation::getURLForBlock('Catalog', 'Category') . '/' . $url . '/' . $row['url'];
-            } else
-            {
-                $row['full_url'] = FrontendNavigation::getURLForBlock('Catalog', 'Category') . '/' . $row['url'];
-            }
-
-            if (isset($row['meta_data'])) $row['meta_data'] = @unserialize($row['meta_data']);
-        }
-
-        return $items;
-    }
 
     /**
      * Fetches a certain category
@@ -562,9 +737,9 @@ class Model implements FrontendTagsInterface
      */
     public static function getCategoryCount($categoryId)
     {
-        return (int)FrontendModel::getContainer()->get('database')->getVar('SELECT COUNT(i.id) AS count
-			 FROM catalog_products AS i
-			 WHERE i.category_id = ?', array((int)$categoryId));
+        return (int)FrontendModel::getContainer()->get('database')->getVar('SELECT COUNT(i.product_id) AS count
+             FROM catalog_products_categories AS i
+             WHERE i.category_id IN ('.$categoryId.')');
     }
 
     /**
@@ -708,6 +883,58 @@ class Model implements FrontendTagsInterface
         return $item;
     }
 
+
+    /**
+     * Get the categories for a product
+     *
+     * @param int $id
+     * @return array
+     */
+    public static function getProductCategories($id)
+    {
+        $items = (array)FrontendModel::getContainer()->get('database')->getRecords('SELECT c.id as id, c.title, c.parent_id, m.url
+        FROM catalog_categories AS c
+         INNER JOIN meta AS m ON c.meta_id = m.id
+         LEFT OUTER JOIN catalog_products_categories pc ON c.id = pc.category_id
+         WHERE c.language = ?
+         AND pc.product_id = ?
+         GROUP BY c.id
+         ORDER BY c.sequence', array(FRONTEND_LANGUAGE, $id), 'id');
+
+        foreach($items as &$item) {
+
+            $paths = self::getCategoryUrl($item);
+
+            $baseUrl = FrontendNavigation::getURLForBlock('Catalog', 'Category');
+            $url = implode('/', $paths);
+            $item['full_url'] = $baseUrl . '/' . $url;
+
+        }
+
+        return $items;
+    }
+
+    /**
+     * Get full url for a category
+     *
+     * @param $categoryId
+     * @param array
+     * @return array
+     */
+    public static function getCategoryUrl($category, $array = array()) {
+
+        if(empty($array)) $array = array();
+
+        $array[] = $category['url'];
+
+        if($category['parent_id'] != 0) {
+            $temp = self::getCategoryById($category['parent_id']);
+            $array[] = $temp['url'];
+        }
+
+        return array_reverse($array);
+    }
+
     /**
      * Get related products
      *
@@ -730,34 +957,7 @@ class Model implements FrontendTagsInterface
         return $relatedProducts;
     }
 
-    /**
-     * Does the order exist?
-     *
-     * @param int $id
-     * @return bool
-     */
-    public static function existsOrder($id)
-    {
-        return (bool)FrontendModel::getContainer()->get('database')->getVar('SELECT 1
-			 FROM catalog_orders AS i
-			 WHERE i.id = ?
-			 LIMIT 1', array((int)$id));
-    }
 
-    /**
-     * Do the values of the order exist?
-     *
-     * @param int $productId
-     * @param int $orderId
-     * @return bool
-     */
-    public static function existsOrderValue($productId, $orderId)
-    {
-        return (bool)FrontendModel::getContainer()->get('database')->getVar('SELECT 1
-			 FROM catalog_orders_values AS i
-			 WHERE i.product_id = ? AND i.order_id = ?
-			 LIMIT 1', array((int)$productId, (int)$orderId));
-    }
 
     /**
      * Insert a new comment
@@ -908,6 +1108,37 @@ class Model implements FrontendTagsInterface
     }
 
     /**
+     * Parse the search results for this module
+     *
+     * Note: a module's search function should always:
+     *        - accept an array of entry id's
+     *        - return only the entries that are allowed to be displayed, with their array's index being the entry's id
+     *
+     *
+     * @param array $ids The ids of the found results.
+     * @return array
+     */
+    public static function search(array $ids)
+    {
+        $items = (array)FrontendModel::getContainer()->get('database')->getRecords('SELECT i.id, i.title, i.summary, i.text, m.url
+             FROM catalog_products AS i
+             INNER JOIN meta AS m ON i.meta_id = m.id
+             WHERE i.language = ? AND i.id IN (' . implode(',', $ids) . ')', array(FRONTEND_LANGUAGE), 'id');
+
+        // get detail action url
+        $detailUrl = FrontendNavigation::getURLForBlock('Catalog', 'Detail');
+
+        // prepare items for search
+        foreach ($items as &$item)
+        {
+            $item['full_url'] = $detailUrl . '/' . $item['url'];
+        }
+
+        // return
+        return $items;
+    }
+
+    /**
      * Update an order
      *
      * @param array $item
@@ -946,183 +1177,4 @@ class Model implements FrontendTagsInterface
         $db->update('catalog_orders_values', $item, 'order_id = ? AND product_id = ?', array((int)$orderId, (int)$productId));
     }
 
-    /**
-     * Delete all spam
-     *
-     */
-    public static function deleteCompletedOrders()
-    {
-        $db = FrontendModel::getContainer()->get('database');
-
-        // get ids
-        $itemIds = (array)$db->getColumn('SELECT i.id
-			 FROM catalog_orders AS i
-			 WHERE status = ?', array('completed'));
-
-        // update record
-        $db->delete('catalog_orders', 'status = ?', array('completed'));
-
-        // invalidate the cache for blog
-        FrontendModel::invalidateFrontendCache('catalog', FL::getWorkingLanguage());
-    }
-
-    /**
-     * Delete a value within an order
-     *
-     * @param int orderId
-     * @param int productId
-     */
-    public static function deleteOrderValue($orderId, $productId)
-    {
-        $db = FrontendModel::getContainer()->get('database');
-
-        // update record
-        $db->delete('catalog_orders_values', 'order_id = ? AND product_id = ?', array((int)$orderId, (int)$productId));
-
-        // invalidate the cache for catalog
-        FrontendModel::invalidateFrontendCache('catalog', FL::getWorkingLanguage());
-    }
-
-    /**
-     * Parse the search results for this module
-     *
-     * Note: a module's search function should always:
-     *        - accept an array of entry id's
-     *        - return only the entries that are allowed to be displayed, with their array's index being the entry's id
-     *
-     *
-     * @param array $ids The ids of the found results.
-     * @return array
-     */
-    public static function search(array $ids)
-    {
-        $items = (array)FrontendModel::getContainer()->get('database')->getRecords('SELECT i.id, i.title, i.summary, i.text, m.url
-			 FROM catalog_products AS i
-			 INNER JOIN meta AS m ON i.meta_id = m.id
-			 WHERE i.language = ? AND i.id IN (' . implode(',', $ids) . ')', array(FRONTEND_LANGUAGE), 'id');
-
-        // get detail action url
-        $detailUrl = FrontendNavigation::getURLForBlock('Catalog', 'Detail');
-
-        // prepare items for search
-        foreach ($items as &$item)
-        {
-            $item['full_url'] = $detailUrl . '/' . $item['url'];
-        }
-
-        // return
-        return $items;
-    }
-
-    /**
-     * Fetches a certain brand
-     *
-     * @param int $id
-     * @return array
-     */
-    public static function getBrand($id)
-    {
-        $item = (array)FrontendModel::getContainer()->get('database')->getRecord('SELECT i.*,
-			 m.keywords AS meta_keywords, m.keywords_overwrite AS meta_keywords_overwrite,
-			 m.description AS meta_description, m.description_overwrite AS meta_description_overwrite,
-			 m.title AS meta_title, m.title_overwrite AS meta_title_overwrite, m.url AS url
-			 FROM catalog_brands AS i
-			 INNER JOIN meta AS m ON i.meta_id = m.id
-			 WHERE i.id=?', array((int)$id));
-
-        // create full url
-        $item['full_url'] = FrontendNavigation::getURLForBlock('Catalog', 'Brand') . '/' . $item['url'];
-
-        return $item;
-    }
-
-    /**
-     * Fetches a certain category
-     *
-     * @param string $URL
-     * @return array
-     */
-    public static function getBrandFromUrl($URL)
-    {
-        $item = (array)FrontendModel::getContainer()->get('database')->getRecord('SELECT i.*,
-			 m.keywords AS meta_keywords, m.keywords_overwrite AS meta_keywords_overwrite,
-			 m.description AS meta_description, m.description_overwrite AS meta_description_overwrite,
-			 m.title AS meta_title, m.title_overwrite AS meta_title_overwrite, m.url
-			 FROM catalog_brands AS i
-			 INNER JOIN meta AS m ON i.meta_id = m.id
-			 WHERE m.url = ?', array((string)$URL));
-
-        // no results?
-        if (empty($item)) return array();
-
-        // create full url
-        $item['full_url'] = FrontendNavigation::getURLForBlock('Catalog', 'Brand') . '/' . $item['url'];
-
-        return $item;
-    }
-
-    /**
-     * Get all category items (at least a chunk)
-     *
-     * @param int $categoryId
-     * @param int [optional] $limit The number of items to get.
-     * @param int [optional] $offset The offset.
-     * @return array
-     */
-    public static function getAllByBrand($brandId, $limit = 10, $offset = 0)
-    {
-        $items = (array)FrontendModel::getContainer()->get('database')->getRecords('SELECT i.*, m.url
-			 FROM catalog_products AS i
-			 INNER JOIN meta AS m ON i.meta_id = m.id
-			 WHERE i.brand_id = ? AND i.language = ?
-			 ORDER BY i.sequence ASC, i.id DESC LIMIT ?, ?', array($brandId, FRONTEND_LANGUAGE, (int)$offset, (int)$limit));
-
-        // no results?
-        if (empty($items)) return array();
-
-        // get detail action url
-        $detailUrl = FrontendNavigation::getURLForBlock('Catalog', 'Detail');
-
-        // prepare items for search
-        foreach ($items as &$item)
-        {
-            $img = FrontendModel::getContainer()->get('database')->getRecord('SELECT * FROM catalog_images WHERE product_id = ? ORDER BY sequence', array((int)$item['id']));
-            if ($img) $item['image'] = FRONTEND_FILES_URL . '/catalog/' . $item['id'] . '/200x200/' . $img['filename'];
-            else $item['image'] = '/' . APPLICATION . '/modules/catalog/layout/images/dummy.png';
-
-            $item['full_url'] = $detailUrl . '/' . $item['url'];
-        }
-
-        // return
-        return $items;
-    }
-
-    /**
-     * Get all categories
-     *
-     * @param int $id
-     * @param string $url
-     * @return array
-     */
-    public static function getAllBrands()
-    {
-
-        $items = (array)FrontendModel::getContainer()->get('database')->getRecords('SELECT i.id, i.title,i.image, m.url, COUNT(p.id) AS total, m.data AS meta_data
-				 FROM catalog_brands AS i
-				 INNER JOIN meta AS m ON i.meta_id = m.id
-				 LEFT OUTER JOIN catalog_products AS p ON p.brand_id = i.id
-				 GROUP BY i.id
-				 ORDER BY i.sequence', null, 'id');
-
-
-        foreach ($items as &$row)
-        {
-            // create full url
-            $row['full_url'] = FrontendNavigation::getURLForBlock('Catalog', 'Brand') . '/' . $row['url'];
-
-            if (isset($row['meta_data'])) $row['meta_data'] = @unserialize($row['meta_data']);
-        }
-
-        return $items;
-    }
 }

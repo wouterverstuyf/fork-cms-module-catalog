@@ -22,7 +22,6 @@
 <div id="productContainer">
 	<div class="title"><h1>{$item.title}</h1></div>
 	<div class="price"><p><b>{$lblPrice|ucfirst}:</b> {$item.price|formatcurrency}</p></div>
-	<div class="category"><p><b>{$lblCategory|ucfirst}:</b> <a href="{$item.category_full_url}">{$item.category_title}</a></p></div>
 	<div class="brand"><p><b>{$lblBrand|ucfirst}:</b> <a href="{$item.brand.full_url}">{$item.brand.title}</a></p></div>
 
 	<!--<div class="summary">{$item.summary}</div>-->
@@ -30,7 +29,7 @@
 		<p><b>{$lblContent|ucfirst}:</b></p>
 		<p>{$item.text}</p>
 	</div>
-	
+
 	{* Product images *}
 	{option:images}
 		<div class="images">
@@ -42,7 +41,7 @@
 			</ul>
 		</div>
 	{/option:images}
-	
+
 	{* Product videos *}
 	{option:videos}
 	<div class="videos">
@@ -54,7 +53,7 @@
 		{/iteration:videos}
 	</div>
 	{/option:videos}
-	
+
 	{* Product files *}
 	{option:files}
 	<div class="videos">
@@ -66,11 +65,22 @@
 		</ul>
 	</div>
 	{/option:files}
-	
+
 	<div class="addProductToShoppingCart">
 		<p><a href="#" id="{$item.id}">{$lblAddProductToShoppingCart|ucfirst}</a></p>
 	</div>
-	
+
+	{* Product categories *}
+	{option:categories}
+		<hr>
+		<h2>{$lblCategories|ucfirst}</h2>
+		<div class="categories">
+			{iteration:categories}
+				<p><b>{$categories.title}</b></p>
+			{/iteration:categories}
+		</div>
+	{/option:categories}
+
 	{* Product specifications *}
 	{option:specifications}
 		<hr>
@@ -82,7 +92,7 @@
 		</div>
 	{/option:specifications}
 
-	
+
 	{* Related products *}
 	{option:related}
 		<hr>
@@ -101,14 +111,14 @@
 		</div>
 		<div class="clearfix"></div>
 	{/option:related}
-	
+
 	{* Product comments *}
 	{option:item.allow_comments}
 		<hr>
 		<h2>{$lblComments|ucfirst}</h2>
 		<div class="comments">
 		{option:comments}
-			{iteration:comments}				
+			{iteration:comments}
 				<p>
 					<b>{$comments.author}</b>
 					{option:comments.website}(<a href="{$comments.website}">{$comments.website}</a>){/option:comments.website}
@@ -120,7 +130,7 @@
 		{/option:comments}
 		{option:!comments} <a href="{$item.full_url}#{$actComment}" itemprop="discussionUrl">{$msgCatalogNoComments}</a>{/option:!comments}
 		</div>
-		
+
 		<div class="form">
 			{option:commentIsInModeration}<div class="message warning"><p>{$msgCatalogCommentInModeration}</p></div>{/option:commentIsInModeration}
 			{option:commentIsSpam}<div class="message error"><p>{$msgCatalogCommentIsSpam}</p></div>{/option:commentIsSpam}
@@ -130,22 +140,22 @@
 					<label for="author">{$lblName|ucfirst}<abbr title="{$lblRequiredField}">*</abbr></label>
 					{$txtAuthor} {$txtAuthorError}
 				</p>
-				
+
 				<p {option:txtEmailError}class="errorArea"{/option:txtEmailError}>
 					<label for="email">{$lblEmail|ucfirst}<abbr title="{$lblRequiredField}">*</abbr></label>
 					{$txtEmail} {$txtEmailError}
 				</p>
-				
+
 				<p class="bigInput{option:txtWebsiteError} errorArea{/option:txtWebsiteError}">
 					<label for="website">{$lblWebsite|ucfirst}</label>
 					{$txtWebsite} {$txtWebsiteError}
 				</p>
-	
+
 				<p class="bigInput{option:txtMessageError} errorArea{/option:txtMessageError}">
 					<label for="message">{$lblMessage|ucfirst}<abbr title="{$lblRequiredField}">*</abbr></label>
 					{$txtMessage} {$txtMessageError}
 				</p>
-	
+
 				<p>
 					<input class="inputSubmit" type="submit" name="comment" value="{$msgComment|ucfirst}" />
 				</p>
@@ -153,9 +163,9 @@
 		</div>
 		<hr>
 	{/option:item.allow_comments}
-	
+
 	{* Back to overview *}
-	<p><a href="{$var|geturlforblock:'catalog'}" title="{$msgToCatalogOverview|ucfirst}">{$msgToCatalogOverview|ucfirst}</a></p>
-	
+	<p><a href="{$var|geturlforblock:'Catalog'}" title="{$msgToCatalogOverview|ucfirst}">{$msgToCatalogOverview|ucfirst}</a></p>
+
 {/option:item}
 </div>

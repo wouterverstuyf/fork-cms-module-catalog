@@ -17,34 +17,34 @@ jsFrontend.catalog =
 	{
 		jsFrontend.catalog.onChange();
 	},
-	
+
 	onChange: function()
-	{				
+	{
 		$addToShoppingCart = $('.addProductToShoppingCart a');
 		$editProductAmountInCheckout = $('.editProductAmountInCheckout a');
 		$removeFromShoppingCart = $('.removeProductFromShoppingCart a');
-		
+
 		// only allow numbers for input field
 		$("#inputAmountOfProducts").keypress(function (e) {
 			if (e.which != 8 && e.which != 0 && (e.which < 48 || e.which > 57)) {
 				return false;
 			}
 		});
-		
+
 		// add or update product
-		$addToShoppingCart.live('click', function(){
+		$addToShoppingCart.on('click', 'a', function() {
 			var $this = $(this);
-			
+
 			var $productId = $this.attr('id');
-			
+
 			// calculate new product amount, shopping cart widget has to be on page
 			// in order to make this work
 			var $currentAmountText = $("#shoppingCartTable #productAmountCell-" + $productId).text();
 			var $currentAmount =  parseInt($currentAmountText) || 0;
 			var $productAmount = $currentAmount + 1;
-			
+
 			var $action = 'add-update';
-			
+
 			// execute fork action from ajax event
 			$.ajax({
 				type: 'POST',
@@ -64,14 +64,14 @@ jsFrontend.catalog =
 				}
 			});
 		});
-		
+
 		// add or update product
-		$editProductAmountInCheckout.live('click', function(){
+		$editProductAmountInCheckout.on('click', 'a', function() {
 			var $this = $(this);
 			var $productId = $this.attr('id');
 			var $productAmount = $("#inputAmountOfProducts-" + $productId).val();
 			var $action = 'add-update';
-			
+
 			// execute fork action from ajax event
 			$.ajax({
 				type: 'POST',
@@ -89,16 +89,16 @@ jsFrontend.catalog =
 				}
 			});
 		});
-		
+
 		jsFrontend.catalog.updateShoppingCart();
-		
+
 		// delete product
-		$removeFromShoppingCart.live('click', function(){
+		$removeFromShoppingCart.on('click', 'a', function() {
 			var $this = $(this);
-						
+
 			var $productId = $this.attr('id');
 			var $action = 'delete';
-			
+
 			// execute fork action from ajax event
 			$.ajax({
 				type: 'POST',
@@ -125,14 +125,14 @@ jsFrontend.catalog =
 		},
 		success: function (result) {
 		    var $target = $('#shoppingCartWidget');
-						
+
 		    if ($target && $target.length) {
 				$target.html(result.data);
 		    }
 		}
 	    });
 	},
-	
+
 	updateCheckoutCart: function()
 	{
 	    $.ajax({
@@ -141,7 +141,7 @@ jsFrontend.catalog =
 		},
 		success: function (result) {
 		    var $target = $('#shoppingCartCheckout');
-						
+
 		    if ($target && $target.length) {
 				$target.html(result.data);
 		    }
@@ -151,7 +151,7 @@ jsFrontend.catalog =
 		}
 	    });
 	},
-	
+
 	displayFeedback: function(type, layout, message)
 	{
 		var n = noty({
