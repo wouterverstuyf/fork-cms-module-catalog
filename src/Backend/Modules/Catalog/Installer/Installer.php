@@ -101,6 +101,9 @@ class Installer extends ModuleInstaller
         // import locale
         $this->importLocale(dirname(__FILE__) . '/Data/locale.xml');
 
+        // enable cookie bar
+        $this->setSetting('Core', 'show_cookie_bar', true);
+
         // general settings
         $this->setSetting('Catalog', 'allow_comments', true);
         $this->setSetting('Catalog', 'requires_akismet', true);
