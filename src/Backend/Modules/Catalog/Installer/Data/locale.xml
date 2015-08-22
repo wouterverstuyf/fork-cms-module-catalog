@@ -82,10 +82,6 @@
 				<translation language="nl"><![CDATA[Producten in &quot;%1$s&quot;]]></translation>
 				<translation language="en"><![CDATA[Products in &quot;%1$s&quot;]]></translation>
 			</item>
-			<item type="message" name="ProductsInShoppingCart">
-				<translation language="nl"><![CDATA[product(en) in winkelwagentje.]]></translation>
-				<translation language="en"><![CDATA[product(s) in shopping cart]]></translation>
-			</item>
 			<item type="message" name="NoProducts">
 				<translation language="nl"><![CDATA[Er zijn nog geen producten toegevoegd.]]></translation>
 				<translation language="en"><![CDATA[There are no products added yet.]]></translation>
@@ -468,6 +464,10 @@
 			<item type="label" name="AddProductToShoppingCart">
 				<translation language="nl"><![CDATA[Plaats in winkelwagen]]></translation>
 				<translation language="en"><![CDATA[Add product to shopping cart]]></translation>
+			</item>
+			<item type="message" name="ProductsInShoppingCart">
+				<translation language="nl"><![CDATA[product(en) in winkelwagentje.]]></translation>
+				<translation language="en"><![CDATA[product(s) in shopping cart]]></translation>
 			</item>
 			<item type="label" name="RecalculatePrice">
 				<translation language="nl"><![CDATA[Prijs herberekenen]]></translation>
