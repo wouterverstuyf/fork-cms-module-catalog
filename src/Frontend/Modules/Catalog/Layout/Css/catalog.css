@@ -110,14 +110,14 @@ p.image a {
 }
 
 /* Shopping Cart*/
-.shopping-cart {
-  background-color: #F5F5F5;
+#CatalogShoppingCartWidget {
+  border-bottom: 1px solid #CCC;
+  padding-bottom: 15px;
+  margin-bottom: 15px;
 }
 
-#CatalogShoppingCartWidget {
-  background: #DDD;
-  padding: 5px;
-  margin-bottom: 15px;
+.productsInShoppingCart {
+  margin-bottom: 10px;
 }
 
 /* Shopping Cart Table */
