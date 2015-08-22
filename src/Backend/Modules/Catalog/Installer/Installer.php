@@ -217,6 +217,12 @@ class Installer extends ModuleInstaller
              WHERE module = ? AND type = ? AND action = ?',
             array('Catalog', 'widget', 'ShoppingCart')
         );
+        // get categories widget extra id
+        $categoriesWidgetId = (int) $this->getDB()->getVar(
+            'SELECT id FROM modules_extras
+             WHERE module = ? AND type = ? AND action = ?',
+            array('Catalog', 'widget', 'Categories')
+        );
 
         // loop languages
         foreach ($this->getLanguages() as $language)
@@ -249,7 +255,8 @@ class Installer extends ModuleInstaller
                     null,
                     array('extra_id' => $catalogId, 'position' => 'main'),
                     array('extra_id' => $searchId, 'position' => 'top'),
-                    array('extra_id' => $shoppingCartId, 'position' => 'left')
+                    array('extra_id' => $shoppingCartId, 'position' => 'left'),
+                    array('extra_id' => $categoriesWidgetId, 'position' => 'left')
                 );
             }
 
