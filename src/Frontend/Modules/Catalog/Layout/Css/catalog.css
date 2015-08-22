@@ -16,6 +16,12 @@ h3{
   margin: 10px 0px;
 }
 
+h4 {
+  font-size: 16px;
+  font-weight: bold;
+  margin: 10px 0px;
+}
+
 p, label {
   margin: 10px 0px;
 }
@@ -28,6 +34,55 @@ p, label {
 .images li{
   display: inline;
   margin: 0px 15px 0px 0px;
+}
+
+.txt-big {
+  margin: 0;
+  color: #2081bb;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.alignleft {
+  float: left;
+  width: auto;
+}
+.alignright {
+  float: right;
+  width: auto;
+}
+
+/* Buttons */
+.btn-blue,
+.btn-regular {
+  margin: 0;
+  padding: 0;
+}
+.btn-blue a,
+.btn-regular a {
+  padding: 5px 8px;
+  border-radius: 2px;
+  display: inline-block;
+  color: #FFFFFF;
+  border: 0;
+}
+.btn-regular a {
+  background: #DDD;
+  color: #000;
+}
+.btn-regular a:hover {
+  background: #CCC;
+}
+.btn-blue a {
+  background: #2081bb;
+}
+.btn-blue a:hover {
+  background: #ef4d03;
+}
+
+/* Product */
+p.image {
+  padding: 0;
 }
 
 /* Related Products*/
@@ -46,9 +101,10 @@ p, label {
   background-color: #F5F5F5;
 }
 
-.productsInShoppingCart label {
-  cursor: pointer;
-  margin: 0px;
+.productsInShoppingCart {
+  background: #DDD;
+  padding: 5px;
+  margin-bottom: 15px;
 }
 
 /* Shopping Cart Table */
@@ -60,6 +116,7 @@ table {
   border-collapse: separate;
   border-spacing: 1px;
   background-color: #FFF;
+  margin-bottom: 0;
 }
 
 table tr {
@@ -85,5 +142,5 @@ table td {
 }
 
 table td:last-child {
-  border-right: 0;   
+  border-right: 0;
 }

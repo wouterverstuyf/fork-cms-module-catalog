@@ -7,39 +7,17 @@
 
 {option:cookiesEnabled}
 <div class="data productsInShoppingCart">
-		
+
 		{option:productsInShoppingCart}
-				<table id="shoppingCartTable">
-						<tr>
-								<th>{$lblProduct|ucfirst}</th>
-								<th>{$lblAmount|ucfirst}</th>
-								<th>{$lblTotal|ucfirst}</th>
-								<th></th>
-						</tr>
-						{iteration:productsInShoppingCart}
-						<tr>
-								<td><a href="{$productsInShoppingCart.full_url}">{$productsInShoppingCart.title}</a></td>
-								<td id="productAmountCell-{$productsInShoppingCart.product_id}">{$productsInShoppingCart.amount}</td>
-								<td>{$productsInShoppingCart.subtotal_price|formatcurrency}</td>
-								<td data-title="{$lblDelete|ucfirst}">
-								    <div class="removeProductFromShoppingCart"><a href="#" id="{$productsInShoppingCart.product_id}">{$lblDelete|ucfirst}</a></div>
-								</td>
-						</tr>
-						{/iteration:productsInShoppingCart}
-						<tr>
-								<td></td>
-								<td>{$lblTotal|ucfirst}</td>
-								<td>{$totalPrice|formatcurrency}</td>
-						</tr>
-				</table>
+			<p><strong>{$amountOfProducts} {$msgProductsInShoppingCart}</strong></p>
+			<p class="txt-big">{$lblTotal|ucfirst}: {$totalPrice|formatcurrency}</p>
+			<p class="btn-blue"><a href="{$overviewUrl}">{$lblGoToShoppingCartOverview|ucfirst}</a></p>
 		{/option:productsInShoppingCart}
-		
+
 		{option:!productsInShoppingCart}
 				<p>{$msgNoProductsInShoppingCart}</p>
 		{/option:!productsInShoppingCart}
 </div>
-
-<label><a href="{$overviewUrl}">{$lblGoToShoppingCartOverview|ucfirst}</a></label>
 {/option:cookiesEnabled}
 
 {option:!cookiesEnabled}

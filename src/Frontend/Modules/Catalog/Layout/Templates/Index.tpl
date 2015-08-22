@@ -13,17 +13,23 @@
 {/option:!categoriesHTML}
 
 {option:categoriesHTML}
- <h3>{$lblCategories|ucfirst}</h3>
+ <h4>{$lblCategories|ucfirst}</h4>
  <div class="bd content">
 	{$categoriesHTML}
  </div>
 {/option:categoriesHTML}
 
 {option:products}
-  <h3>{$lblProducts|ucfirst}</h3>
-  <ul>
+  <h4>{$lblProducts|ucfirst}</h4>
+  <ul class="overview">
     {iteration:products}
-    <li>{$products.title}</li>
+    <li>
+      <h4><a href="{$products.full_url}" title="{$products.title}">{$products.title}</a></h4>
+      <p class="image"><img src="{$products.image_thumb}" alt="{$products.title}" title="{$products.title}" /></p>
+      <p class="price txt-big">{$products.price|formatcurrency}</p>
+      <p class="addtocart addProductToShoppingCart btn-blue"><a href="#" id="{$products.id}">{$lblAddProductToShoppingCart|ucfirst}</a></p>
+      <p class="more"><a href="{$products.full_url}" title="{$products.title}">{$lblReadMore|ucfirst}</a></p>
+    </li>
     {/iteration:products}
   </ul>
 {/option:products}

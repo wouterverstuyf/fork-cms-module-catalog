@@ -198,6 +198,10 @@ class Model implements FrontendTagsInterface
         foreach ($items as &$item)
         {
             $item['full_url'] = $detailUrl . '/' . $item['url'];
+
+            $images = self::getImages((int)$item['id']);
+            $item = array_merge($images[0], $item);
+            $item['images'] = $images;
         }
 
         // return

@@ -51,7 +51,7 @@
 {/option:!productsInShoppingCart}
 
 {option:productsInShoppingCart}
-    <p><a href="{$personalDataUrl}">{$lblGoToPersonalData|ucfirst}</a></p>
+    <p class="btn-blue alignright"><a href="{$personalDataUrl}">{$lblGoToPersonalData|ucfirst}</a></p>
 {/option:productsInShoppingCart}
 
-<p><a href="{$catalogUrl}">{$lblContinueShopping|ucfirst}</a></p>
+    <p class="btn-regular alignleft"><a href="{$catalogUrl}">{$lblContinueShopping|ucfirst}</a></p>

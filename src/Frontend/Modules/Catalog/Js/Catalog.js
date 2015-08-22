@@ -20,9 +20,9 @@ jsFrontend.catalog =
 
 	onChange: function()
 	{
-		$addToShoppingCart = $('.addProductToShoppingCart a');
-		$editProductAmountInCheckout = $('.editProductAmountInCheckout a');
-		$removeFromShoppingCart = $('.removeProductFromShoppingCart a');
+		$addToShoppingCart = $('.addProductToShoppingCart');
+		$editProductAmountInCheckout = $('.editProductAmountInCheckout');
+		$removeFromShoppingCart = $('.removeProductFromShoppingCart');
 
 		// only allow numbers for input field
 		$("#inputAmountOfProducts").keypress(function (e) {
@@ -34,7 +34,6 @@ jsFrontend.catalog =
 		// add or update product
 		$addToShoppingCart.on('click', 'a', function() {
 			var $this = $(this);
-
 			var $productId = $this.attr('id');
 
 			// calculate new product amount, shopping cart widget has to be on page
@@ -85,7 +84,7 @@ jsFrontend.catalog =
 				success: function (data) {
 					jsFrontend.catalog.updateShoppingCart();
 					jsFrontend.catalog.updateCheckoutCart();
-					jsFrontend.catalog.displayFeedback('success', 'center', jsFrontend.locale.lbl('ProductAdded'));
+					jsFrontend.catalog.displayFeedback('success', 'center', jsFrontend.locale.lbl('ShoppingCartUpdated'));
 				}
 			});
 		});
@@ -95,7 +94,6 @@ jsFrontend.catalog =
 		// delete product
 		$removeFromShoppingCart.on('click', 'a', function() {
 			var $this = $(this);
-
 			var $productId = $this.attr('id');
 			var $action = 'delete';
 
@@ -115,22 +113,23 @@ jsFrontend.catalog =
 				}
 			});
 		});
+
 	},
 
 	updateShoppingCart: function()
 	{
-	    $.ajax({
-		data: {
-		    fork: { module: 'Catalog', action: 'UpdateShoppingCart' }
-		},
-		success: function (result) {
-		    var $target = $('#shoppingCartWidget');
+	  $.ajax({
+			data: {
+			    fork: { module: 'Catalog', action: 'UpdateShoppingCart' }
+			},
+			success: function (result) {
+			 	var $target = $('#shoppingCartWidget');
 
-		    if ($target && $target.length) {
-				$target.html(result.data);
-		    }
-		}
-	    });
+			 	if ($target && $target.length) {
+					$target.html(result.data);
+			  }
+			}
+	  });
 	},
 
 	updateCheckoutCart: function()
