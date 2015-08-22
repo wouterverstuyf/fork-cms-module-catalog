@@ -56,7 +56,7 @@ CREATE TABLE IF NOT EXISTS `catalog_orders` (
   `hnumber` varchar(255) DEFAULT NULL,
   `postal` varchar(255) DEFAULT NULL,
   `hometown` varchar(255) DEFAULT NULL,
-  `total` int(11) NOT NULL,
+  `total` int(11) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 

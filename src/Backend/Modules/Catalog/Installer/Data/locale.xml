@@ -74,9 +74,17 @@
 				<translation language="nl"><![CDATA[Toon enkel producten in de categorie]]></translation>
 				<translation language="en"><![CDATA[Show only products in category]]></translation>
 			</item>
+			<item type="label" name="ShoppingCartUpdated">
+				<translation language="nl"><![CDATA[Het winkelwagentje is bijgewerkt.]]></translation>
+				<translation language="en"><![CDATA[The shoppingcart is updated.]]></translation>
+			</item>
 			<item type="message" name="ProductsFor">
 				<translation language="nl"><![CDATA[Producten in &quot;%1$s&quot;]]></translation>
 				<translation language="en"><![CDATA[Products in &quot;%1$s&quot;]]></translation>
+			</item>
+			<item type="message" name="ProductsInShoppingCart">
+				<translation language="nl"><![CDATA[product(en) in winkelwagentje.]]></translation>
+				<translation language="en"><![CDATA[product(s) in shopping cart]]></translation>
 			</item>
 			<item type="message" name="NoProducts">
 				<translation language="nl"><![CDATA[Er zijn nog geen producten toegevoegd.]]></translation>
