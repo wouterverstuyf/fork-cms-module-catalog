@@ -24,12 +24,14 @@ class Installer extends ModuleInstaller
     /**
      * @var    int
      */
-    private $defaultCategoryId;
+    private $categoryTelevisionId;
+    private $categoryMobilesId;
 
     /**
      * @var    int
      */
-    private $defaultBrandId;
+    private $brandIdSamsung;
+    private $brandIdApple;
 
     /**
      * Add a category for a language
@@ -219,16 +221,15 @@ class Installer extends ModuleInstaller
         // loop languages
         foreach ($this->getLanguages() as $language)
         {
-            $this->defaultCategoryId = $this->getCategory($language);
+            // add category Televisions
+            $this->categoryTelevisionId = $this->addCategory($language, 'Samsung', 'samsung', 0);
+            // add category Mobiles
+            $this->categoryMobilesId = $this->addCategory($language, 'Mobiles', 'mobiles', 0);
 
-            // no category exists
-            if ($this->defaultCategoryId == 0)
-            {
-                $this->defaultCategoryId = $this->addCategory($language, 'Default', 'default', 0);
-            }
-
-            // add default brand
-            $this->defaultBrandId = $this->addBrand($language, 'Samsung', 'samsung');
+            // add brand Samsung
+            $this->brandIdSamsung = $this->addBrand($language, 'Samsung', 'samsung');
+            // add brand Apple
+            $this->brandIdApple = $this->addBrand($language, 'Apple', 'apple');
 
             // check if a page for catalog already exists in this language
             if (!(bool)$this->getDB()->getVar(
@@ -290,9 +291,12 @@ class Installer extends ModuleInstaller
             array($language))
         )
         {
+
+            /* PRODUCT 1 */
+
             // insert sample product
             $productId = $db->insert('catalog_products', array(
-                'brand_id' => $this->defaultBrandId,
+                'brand_id' => $this->brandIdSamsung,
                 'meta_id' => $this->insertMeta('Samsung', 'Samsung', 'Samsung', 'samsung'),
                 'language' => $language,
                 'title' => 'Samsung UN32F5500',
@@ -318,7 +322,7 @@ class Installer extends ModuleInstaller
             // insert product category
             $db->insert('catalog_products_categories', array(
                 'product_id' => $productId,
-                'category_id' => $this->defaultCategoryId,
+                'category_id' => $this->categoryTelevisionId,
                 'sequence' => 1,
             ));
 
@@ -339,7 +343,7 @@ class Installer extends ModuleInstaller
             ));
 
             // insert sample specification 2
-            $specificationId = $db->insert('catalog_specifications', array(
+            $specificationId2 = $db->insert('catalog_specifications', array(
                 'title' => 'Model Number',
                 'type' => 'textbox',
                 'meta_id' => $this->insertMeta('Model', 'Model', 'Model', 'model'),
@@ -350,7 +354,7 @@ class Installer extends ModuleInstaller
             // insert sample specification value 2
             $db->insert('catalog_specifications_values', array(
                 'product_id' => $productId,
-                'specification_id' => $specificationId,
+                'specification_id' => $specificationId2,
                 'value' => 'UN32F5500'
             ));
 
@@ -402,10 +406,58 @@ class Installer extends ModuleInstaller
                 'sequence' => 6
             ));
 
+            /* PRODUCT 2 */
+
+            // insert sample product
+            $productId2 = $db->insert('catalog_products', array(
+                'brand_id' => $this->brandIdApple,
+                'meta_id' => $this->insertMeta('Samsung', 'Samsung', 'Samsung', 'samsung'),
+                'language' => $language,
+                'title' => 'Apple Iphone 6',
+                'summary' => '  Iphone is a line of smartphones designed and marketed by Apple Inc. They run Apple\'s iOS mobile operating system.
+                    The first generation iPhone was released on June 29, 2007; the most recent iPhone models are the iPhone 6 and iPhone 6 Plus, which were unveiled at a special event on September 9, 2014.
+                ',
+                'text' => ' This is the main text of the product.',
+                'created_on' => gmdate('Y-m-d H:i:00'),
+                'edited_on' => gmdate('Y-m-d H:i:00'),
+                'price' => '799',
+                'allow_comments' => 'Y',
+                'num_comments' => '0',
+            ));
+
+            // insert product category
+            $db->insert('catalog_products_categories', array(
+                'product_id' => $productId2,
+                'category_id' => $this->categoryMobilesId,
+                'sequence' => 1,
+            ));
+
+            // insert sample specification value 1
+            $db->insert('catalog_specifications_values', array(
+                'product_id' => $productId2,
+                'specification_id' => $specificationId,
+                'value' => '13.4 pounds'
+            ));
+
+            // insert sample specification value 2
+            $db->insert('catalog_specifications_values', array(
+                'product_id' => $productId2,
+                'specification_id' => $specificationId2,
+                'value' => 'UN32F5500'
+            ));
+
+            // insert sample image 2
+            $db->insert('catalog_images', array(
+                'product_id' => $productId2,
+                'title' => 'Front',
+                'filename' => 'apple-1.jpg',
+                'sequence' => 2
+            ));
+
             // copy images into files path
             $fs = new Filesystem();
             if (!$fs->exists(PATH_WWW . '/src/Frontend/Files/Catalog/')) $fs->mkdir(PATH_WWW . '/src/Frontend/Files/Catalog/');
-            $fs->mirror(PATH_WWW . '/src/Backend/Modules/Catalog/Installer/Data/Images/', PATH_WWW . '/src/Frontend/Files/Catalog/' . $productId);
+            $fs->mirror(PATH_WWW . '/src/Backend/Modules/Catalog/Installer/Data/Images/', PATH_WWW . '/src/Frontend/Files/Catalog/');
         }
     }
 }
