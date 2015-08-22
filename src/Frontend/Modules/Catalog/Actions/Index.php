@@ -29,13 +29,6 @@ class Index extends FrontendBaseBlock
     private $products;
 
     /**
-     * All categories in tree view
-     *
-     * @var    array
-     */
-    private $categoriesTree;
-
-    /**
      * The pagination array
      * It will hold all needed parameters, some of them need initialization.
      *
@@ -100,12 +93,6 @@ class Index extends FrontendBaseBlock
 
         // assign items
         $this->tpl->assign('products', $this->products);
-
-        // multidimensional array of categories
-        $this->tpl->assign('categoriesTree', $this->categoriesTree);
-
-        // multidimensional html list of categories
-        $this->tpl->assign('categoriesHTML', FrontendCatalogModel::getTreeHTML($this->categoriesTree));
 
         // parse the pagination
         $this->parsePagination();

@@ -111,11 +111,10 @@ p.image a {
 
 /* Shopping Cart*/
 .shopping-cart {
-  padding: 5px 10px 10px 10px;
   background-color: #F5F5F5;
 }
 
-.productsInShoppingCart {
+#CatalogShoppingCartWidget {
   background: #DDD;
   padding: 5px;
   margin-bottom: 15px;

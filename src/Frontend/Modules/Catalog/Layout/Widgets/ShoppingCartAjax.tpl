@@ -6,17 +6,16 @@
 *}
 
 {option:cookiesEnabled}
-<div class="data productsInShoppingCart">
+<div id="CatalogShoppingCartWidget">
+	{option:productsInShoppingCart}
+		<p><strong>{$amountOfProducts} {$msgProductsInShoppingCart}</strong></p>
+		<p class="txt-big">{$lblTotal|ucfirst}: {$totalPrice|formatcurrency}</p>
+		<p class="btn-blue"><a href="{$overviewUrl}">{$lblGoToShoppingCartOverview|ucfirst}</a></p>
+	{/option:productsInShoppingCart}
 
-		{option:productsInShoppingCart}
-			<p><strong>{$amountOfProducts} {$msgProductsInShoppingCart}</strong></p>
-			<p class="txt-big">{$lblTotal|ucfirst}: {$totalPrice|formatcurrency}</p>
-			<p class="btn-blue"><a href="{$overviewUrl}">{$lblGoToShoppingCartOverview|ucfirst}</a></p>
-		{/option:productsInShoppingCart}
-
-		{option:!productsInShoppingCart}
-				<p>{$msgNoProductsInShoppingCart}</p>
-		{/option:!productsInShoppingCart}
+	{option:!productsInShoppingCart}
+			<p>{$msgNoProductsInShoppingCart}</p>
+	{/option:!productsInShoppingCart}
 </div>
 {/option:cookiesEnabled}
 
