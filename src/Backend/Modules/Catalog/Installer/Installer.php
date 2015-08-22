@@ -411,7 +411,7 @@ class Installer extends ModuleInstaller
             // insert sample product
             $productId2 = $db->insert('catalog_products', array(
                 'brand_id' => $this->brandIdApple,
-                'meta_id' => $this->insertMeta('Samsung', 'Samsung', 'Samsung', 'samsung'),
+                'meta_id' => $this->insertMeta('iphone6', 'iphone6', 'iphone6', 'iphone6'),
                 'language' => $language,
                 'title' => 'Apple Iphone 6',
                 'summary' => '  Iphone is a line of smartphones designed and marketed by Apple Inc. They run Apple\'s iOS mobile operating system.
